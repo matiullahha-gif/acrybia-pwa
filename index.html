@@ -5,24 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#ffffff">
   <title>Acrybia Tracker</title>
-  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#4F46E5',
-            'primary-light': '#818CF8',
-            'primary-dark': '#3730A3',
-          }
-        }
-      }
-    }
-  </script>
+  <style>
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .tab-content { animation: fadeIn 0.25s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .nav-btn { color: #9ca3af; transition: all 0.2s; }
+    .nav-btn.active { color: #4F46E5; background: rgba(79, 70, 229, 0.08); }
+    .cat-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.08) !important; }
+    .sub-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.08) !important; color: #4F46E5 !important; }
+    .detail-sub-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.1) !important; color: #4F46E5 !important; }
+    .prio-btn.selected[data-prio="1"] { border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.08) !important; color: #ef4444 !important; }
+    .prio-btn.selected[data-prio="2"] { border-color: #f59e0b !important; background: rgba(245, 158, 11, 0.08) !important; color: #f59e0b !important; }
+    .prio-btn.selected[data-prio="3"] { border-color: #3b82f6 !important; background: rgba(59, 130, 246, 0.08) !important; color: #3b82f6 !important; }
+    .tag-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.1) !important; color: #4F46E5 !important; }
+    .task-item { transition: all 0.2s; }
+    .task-item.completed { opacity: 0.55; background: #f0fdf4; }
+    .task-item.completed .task-title { text-decoration: line-through; color: #9ca3af; }
+    .badge-high { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+    .badge-medium { background: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+    .badge-low { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+    .dot-arbeit { background: #3b82f6; }
+    .dot-acrybia { background: #a855f7; }
+    .dot-sport { background: #f97316; }
+    .dot-chinesisch { background: #ef4444; }
+    .dot-custom { background: #10b981; }
+    .day-strip-item { transition: all 0.2s; }
+    .day-strip-item.active { background: #4F46E5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+    .day-strip-item:not(.active) { background: #f3f4f6; color: #6b7280; }
+    .timeline-item { position: relative; padding-left: 60px; }
+    .timeline-item::before { content: ''; position: absolute; left: 44px; top: 32px; bottom: -16px; width: 2px; background: #e5e7eb; }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-dot { position: absolute; left: 38px; top: 28px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px #e5e7eb; }
+    .challenge-card { min-width: 260px; scroll-snap-align: start; }
+    #taskModal > div:last-child { animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; background: #e5e7eb; border-radius: 3px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #4F46E5; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3); }
+    button:active { transform: scale(0.97); }
+    @media (max-width: 380px) { .nav-btn span { display: none; } .nav-btn i { margin-bottom: 0; font-size: 1.25rem; } }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-x-hidden pb-24">
 
@@ -30,19 +59,15 @@
   <header class="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
     <div class="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-sm shadow-md">
-          AL
-        </div>
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md">A</div>
         <div>
           <p class="text-xs text-gray-400">Guten Tag</p>
           <h1 class="text-lg font-bold text-gray-900 leading-tight">Acrybia</h1>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600">
-          <i class="fas fa-download text-sm"></i>
-        </button>
-      </div>
+      <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600">
+        <i class="fas fa-download text-sm"></i>
+      </button>
     </div>
   </header>
 
@@ -51,113 +76,80 @@
 
     <!-- TAB: HOME / TASKS -->
     <div id="tab-tasks" class="tab-content">
-      <!-- Weekly Challenges / Wochenziele -->
       <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-lg font-bold text-gray-900">Wochenziele</h2>
-          <button onclick="app.switchTab('week')" class="text-xs text-primary font-semibold flex items-center gap-1">
-            Alle ansehen <i class="fas fa-chevron-right text-[10px]"></i>
-          </button>
+          <button onclick="app.switchTab('week')" class="text-xs text-blue-600 font-semibold flex items-center gap-1">Alle ansehen <i class="fas fa-chevron-right text-[10px]"></i></button>
         </div>
-        <div id="weekChallenges" class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
-          <!-- Wird dynamisch gefüllt -->
-        </div>
+        <div id="weekChallenges" class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"></div>
       </div>
 
-      <!-- Task for you -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-lg font-bold text-gray-900">Deine Tasks</h2>
-          <button onclick="app.switchTab('dashboard')" class="text-xs text-primary font-semibold flex items-center gap-1">
-            Zeitplan <i class="fas fa-chevron-right text-[10px]"></i>
-          </button>
+          <button onclick="app.switchTab('dashboard')" class="text-xs text-blue-600 font-semibold flex items-center gap-1">Zeitplan <i class="fas fa-chevron-right text-[10px]"></i></button>
         </div>
         <div id="tasksList" class="space-y-3"></div>
       </div>
+
+      <div class="mt-6">
+        <button id="dayCompleteBtn" onclick="app.openDayCompleteModal()" class="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald-200">
+          <i class="fas fa-check-circle mr-2"></i><span id="dayCompleteBtnText">Tag abschließen</span>
+        </button>
+      </div>
     </div>
 
-    <!-- TAB: SCHEDULE / DASHBOARD -->
+    <!-- TAB: SCHEDULE -->
     <div id="tab-dashboard" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Zeitplan</h2>
-
-      <!-- Week Day Strip -->
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-        <div id="weekDayStrip" class="flex justify-between items-center">
-          <!-- Dynamisch gefüllt -->
-        </div>
+        <div id="weekDayStrip" class="flex justify-between items-center"></div>
       </div>
-
-      <!-- Timeline -->
-      <div id="timelineView" class="space-y-0">
-        <!-- Dynamisch gefüllt -->
-      </div>
+      <div id="timelineView" class="space-y-0"></div>
     </div>
 
     <!-- TAB: BODY -->
     <div id="tab-body" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Body</h2>
-
-      <!-- Weight Card -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
         <div class="flex items-center justify-between mb-4">
           <div>
             <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Gewicht</p>
             <p class="text-2xl font-bold text-gray-900"><span id="currentWeightDisplay">--</span> <span class="text-sm text-gray-400 font-normal">kg</span></p>
           </div>
-          <div class="w-16 h-16 relative">
-            <canvas id="weightChart"></canvas>
-          </div>
+          <div class="w-16 h-16 relative"><canvas id="weightChart"></canvas></div>
         </div>
         <div class="flex gap-2">
-          <input type="number" id="weightInput" step="0.1" placeholder="95.5" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-sm">
-          <button onclick="app.saveWeight()" class="px-5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-primary/25">Speichern</button>
+          <input type="number" id="weightInput" step="0.1" placeholder="95.5" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition text-sm">
+          <button onclick="app.saveWeight()" class="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-blue-200">Speichern</button>
         </div>
       </div>
 
-      <!-- Waist Card -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
         <div class="flex items-center justify-between mb-4">
           <div>
             <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Taille</p>
             <p class="text-2xl font-bold text-gray-900"><span id="currentWaistDisplay">--</span> <span class="text-sm text-gray-400 font-normal">cm</span></p>
           </div>
-          <div class="w-16 h-16 relative">
-            <canvas id="waistChart"></canvas>
-          </div>
+          <div class="w-16 h-16 relative"><canvas id="waistChart"></canvas></div>
         </div>
         <div class="flex gap-2">
-          <input type="number" id="waistInput" step="0.1" placeholder="98" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-sm">
-          <button onclick="app.saveWaist()" class="px-5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-purple/25">Speichern</button>
+          <input type="number" id="waistInput" step="0.1" placeholder="98" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition text-sm">
+          <button onclick="app.saveWaist()" class="px-5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-purple-200">Speichern</button>
         </div>
       </div>
 
-      <!-- Meals -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="font-bold text-gray-900">Ernährung</h3>
-          <button onclick="app.openWeightSettings()" class="text-gray-400 hover:text-primary transition"><i class="fas fa-cog"></i></button>
+          <button onclick="app.openWeightSettings()" class="text-gray-400 hover:text-blue-600 transition"><i class="fas fa-cog"></i></button>
         </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block font-medium">Morgens</label>
-          <input type="text" id="mealMorning" placeholder="Haferflocken, Banane..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block font-medium">Mittags</label>
-          <input type="text" id="mealLunch" placeholder="Hähnchen, Reis..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block font-medium">Abends</label>
-          <input type="text" id="mealDinner" placeholder="Fisch, Gemüse..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block font-medium">Snack</label>
-          <input type="text" id="mealSnack" placeholder="Nüsse, Proteinriegel..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block font-medium">Protein (g)</label>
-          <input type="number" id="proteinInput" placeholder="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-        </div>
-        <button onclick="app.saveBody()" class="w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition shadow-lg shadow-primary/25">Body-Daten speichern</button>
+        <div><label class="text-xs text-gray-400 mb-1 block font-medium">Morgens</label><input type="text" id="mealMorning" placeholder="Haferflocken, Banane..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+        <div><label class="text-xs text-gray-400 mb-1 block font-medium">Mittags</label><input type="text" id="mealLunch" placeholder="Hähnchen, Reis..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+        <div><label class="text-xs text-gray-400 mb-1 block font-medium">Abends</label><input type="text" id="mealDinner" placeholder="Fisch, Gemüse..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+        <div><label class="text-xs text-gray-400 mb-1 block font-medium">Snack</label><input type="text" id="mealSnack" placeholder="Nüsse, Proteinriegel..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+        <div><label class="text-xs text-gray-400 mb-1 block font-medium">Protein (g)</label><input type="number" id="proteinInput" placeholder="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+        <button onclick="app.saveBody()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-lg shadow-blue-200">Body-Daten speichern</button>
       </div>
     </div>
 
@@ -165,14 +157,14 @@
     <div id="tab-week" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Wochenziele</h2>
       <div id="weekGoals" class="space-y-3"></div>
-      <button onclick="app.addWeekGoal()" class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:text-primary hover:border-primary transition text-sm font-semibold flex items-center justify-center gap-2">
+      <button onclick="app.addWeekGoal()" class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:text-blue-600 hover:border-blue-400 transition text-sm font-semibold flex items-center justify-center gap-2">
         <i class="fas fa-plus"></i> Wochenziel hinzufügen
       </button>
     </div>
   </main>
 
   <!-- Floating Action Button -->
-  <button onclick="app.openTaskModal()" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-xl shadow-primary/40 flex items-center justify-center transition transform hover:scale-110 active:scale-95">
+  <button onclick="app.openTaskModal()" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-300 flex items-center justify-center transition transform hover:scale-110 active:scale-95">
     <i class="fas fa-plus text-xl"></i>
   </button>
 
@@ -180,21 +172,17 @@
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 pb-safe">
     <div class="max-w-lg mx-auto flex justify-around items-center py-2 px-4">
       <button onclick="app.switchTab('tasks')" class="nav-btn active flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="tasks">
-        <i class="fas fa-home text-lg mb-0.5"></i>
-        <span class="text-[10px] font-medium">Home</span>
+        <i class="fas fa-home text-lg mb-0.5"></i><span class="text-[10px] font-medium">Home</span>
       </button>
       <button onclick="app.switchTab('dashboard')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="dashboard">
-        <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
-        <span class="text-[10px] font-medium">Plan</span>
+        <i class="fas fa-calendar-alt text-lg mb-0.5"></i><span class="text-[10px] font-medium">Plan</span>
       </button>
-      <div class="w-14"></div> <!-- Spacer for FAB -->
+      <div class="w-14"></div>
       <button onclick="app.switchTab('week')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="week">
-        <i class="fas fa-list-check text-lg mb-0.5"></i>
-        <span class="text-[10px] font-medium">Ziele</span>
+        <i class="fas fa-list-check text-lg mb-0.5"></i><span class="text-[10px] font-medium">Ziele</span>
       </button>
       <button onclick="app.switchTab('body')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="body">
-        <i class="fas fa-user text-lg mb-0.5"></i>
-        <span class="text-[10px] font-medium">Body</span>
+        <i class="fas fa-user text-lg mb-0.5"></i><span class="text-[10px] font-medium">Body</span>
       </button>
     </div>
   </nav>
@@ -206,7 +194,6 @@
       <div class="p-6 max-w-lg mx-auto">
         <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
         <h2 class="text-xl font-bold text-gray-900 mb-6">Neue Aufgabe</h2>
-
         <div class="mb-4">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategorie</label>
           <div class="grid grid-cols-2 gap-2.5" id="categoryGrid">
@@ -227,28 +214,18 @@
             </button>
           </div>
         </div>
-
         <div id="subcategorySection" class="mb-4 hidden">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Unterkategorie</label>
           <div id="subcategoryGrid" class="grid grid-cols-2 gap-2"></div>
         </div>
-
         <div id="detailSection" class="mb-4 hidden">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2" id="detailLabel">Details</label>
           <div id="detailInputContainer"></div>
         </div>
-
         <div class="grid grid-cols-2 gap-3 mb-4">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start</label>
-            <input type="time" id="taskStart" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ende</label>
-            <input type="time" id="taskEnd" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
-          </div>
+          <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start</label><input type="time" id="taskStart" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
+          <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ende</label><input type="time" id="taskEnd" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
         </div>
-
         <div class="mb-6">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Priorität</label>
           <div class="flex gap-2">
@@ -257,10 +234,7 @@
             <button type="button" onclick="app.selectPriority(3)" class="prio-btn flex-1 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-bold text-gray-600" data-prio="3">Low</button>
           </div>
         </div>
-
-        <button onclick="app.saveTask()" class="w-full py-4 rounded-xl bg-primary hover:bg-primary-dark text-white active:scale-95 transition font-bold shadow-lg shadow-primary/25">
-          Aufgabe erstellen
-        </button>
+        <button onclick="app.saveTask()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white active:scale-95 transition font-bold shadow-lg shadow-blue-200">Aufgabe erstellen</button>
       </div>
     </div>
   </div>
@@ -272,10 +246,8 @@
       <div class="p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-2">Aufgabe abschließen</h2>
         <p class="text-sm text-gray-400 mb-4">Was hast du erreicht?</p>
-        <textarea id="taskAchievement" rows="3" placeholder="Beschreibe dein Ergebnis..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition mb-4"></textarea>
-        <button onclick="app.completeTask()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald/25">
-          <i class="fas fa-check mr-2"></i>Abschließen
-        </button>
+        <textarea id="taskAchievement" rows="3" placeholder="Beschreibe dein Ergebnis..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition mb-4"></textarea>
+        <button onclick="app.completeTask()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald-200"><i class="fas fa-check mr-2"></i>Abschließen</button>
       </div>
     </div>
   </div>
@@ -286,97 +258,64 @@
     <div class="absolute inset-x-3 top-8 bottom-8 bg-white rounded-3xl border border-gray-100 max-w-lg mx-auto overflow-y-auto shadow-2xl">
       <div class="p-6">
         <div class="text-center mb-6">
-          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-trophy text-2xl text-emerald-500"></i>
-          </div>
+          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-trophy text-2xl text-emerald-500"></i></div>
           <h2 class="text-2xl font-bold text-gray-900">Tagesabschluss!</h2>
           <p class="text-sm text-gray-400 mt-1">Zeit für Reflexion.</p>
-          <p id="dayCompleteWarning" class="hidden text-xs text-amber-500 mt-2 font-semibold bg-amber-50 rounded-lg py-1.5 px-3 inline-block"></p>
+          <p id="dayCompleteWarning" class="hidden text-xs text-amber-600 mt-2 font-semibold bg-amber-50 rounded-lg py-1.5 px-3 inline-block"></p>
         </div>
-
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Womit hattest du am meisten Probleme?</label>
-            <select id="refProblemCat" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 mb-2 focus:outline-none focus:border-primary transition">
-              <option value="arbeit">Arbeit</option>
-              <option value="acrybia">Acrybia</option>
-              <option value="sport">Sport</option>
-              <option value="chinesisch">Chinesisch</option>
-              <option value="body">Body/Ernährung</option>
-              <option value="other">Andere</option>
+            <select id="refProblemCat" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 mb-2 focus:outline-none focus:border-blue-500 transition">
+              <option value="arbeit">Arbeit</option><option value="acrybia">Acrybia</option><option value="sport">Sport</option><option value="chinesisch">Chinesisch</option><option value="body">Body/Ernährung</option><option value="other">Andere</option>
             </select>
-            <textarea id="refProblemText" rows="2" placeholder="Beschreibung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+            <textarea id="refProblemText" rows="2" placeholder="Beschreibung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></textarea>
           </div>
-
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Was hat dich aufgehalten?</label>
-            <textarea id="refBlocker" rows="2" placeholder="z.B. Müdigkeit, Ablenkung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+            <textarea id="refBlocker" rows="2" placeholder="z.B. Müdigkeit, Ablenkung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></textarea>
           </div>
-
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Warum?</label>
-            <textarea id="refBlockerWhy" rows="2" placeholder="Ursache analysieren..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+            <textarea id="refBlockerWhy" rows="2" placeholder="Ursache analysieren..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></textarea>
           </div>
-
-          <!-- Scham-Block -->
           <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
             <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" id="shameToggle" onchange="app.toggleShame()" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+              <input type="checkbox" id="shameToggle" onchange="app.toggleShame()" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
               <span class="text-sm font-semibold text-gray-700">Hast du heute Scham erlebt?</span>
             </label>
             <div id="shameFields" class="hidden mt-3 space-y-2">
-              <div>
-                <label class="text-xs text-gray-400 mb-1 block font-medium">Wann?</label>
-                <input type="text" id="shameWhen" placeholder="Situation beschreiben..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
-              </div>
-              <div>
-                <label class="text-xs text-gray-400 mb-1 block font-medium">Warum?</label>
-                <textarea id="shameWhy" rows="2" placeholder="Auslöser / Grund..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
-              </div>
+              <div><label class="text-xs text-gray-400 mb-1 block font-medium">Wann?</label><input type="text" id="shameWhen" placeholder="Situation beschreiben..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
+              <div><label class="text-xs text-gray-400 mb-1 block font-medium">Warum?</label><textarea id="shameWhy" rows="2" placeholder="Auslöser / Grund..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></textarea></div>
             </div>
           </div>
-
-          <!-- Angst-Block -->
           <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
             <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" id="fearToggle" onchange="app.toggleFear()" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+              <input type="checkbox" id="fearToggle" onchange="app.toggleFear()" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
               <span class="text-sm font-semibold text-gray-700">Hast du heute Angst erlebt?</span>
             </label>
             <div id="fearFields" class="hidden mt-3">
               <label class="text-xs text-gray-400 mb-1 block font-medium">Warum?</label>
-              <textarea id="fearWhy" rows="2" placeholder="Grund der Angst..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+              <textarea id="fearWhy" rows="2" placeholder="Grund der Angst..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></textarea>
             </div>
           </div>
-
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tags</label>
             <div class="flex flex-wrap gap-2" id="refTags">
-              <button type="button" onclick="app.toggleTag(this, 'müdigkeit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Müdigkeit</button>
-              <button type="button" onclick="app.toggleTag(this, 'zeitdruck')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Zeitdruck</button>
-              <button type="button" onclick="app.toggleTag(this, 'ablenkung')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Ablenkung</button>
-              <button type="button" onclick="app.toggleTag(this, 'technik')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Technik</button>
-              <button type="button" onclick="app.toggleTag(this, 'gesundheit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Gesundheit</button>
-              <button type="button" onclick="app.toggleTag(this, 'motivation')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Motivation</button>
+              <button type="button" onclick="app.toggleTag(this, 'müdigkeit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Müdigkeit</button>
+              <button type="button" onclick="app.toggleTag(this, 'zeitdruck')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Zeitdruck</button>
+              <button type="button" onclick="app.toggleTag(this, 'ablenkung')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Ablenkung</button>
+              <button type="button" onclick="app.toggleTag(this, 'technik')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Technik</button>
+              <button type="button" onclick="app.toggleTag(this, 'gesundheit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Gesundheit</button>
+              <button type="button" onclick="app.toggleTag(this, 'motivation')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Motivation</button>
             </div>
           </div>
-
           <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Stimmung (1-5)</label>
-              <input type="range" id="refMood" min="1" max="5" value="3" class="w-full accent-primary" oninput="document.getElementById('moodVal').textContent=this.value">
-              <div class="text-center text-sm text-primary font-bold mt-1" id="moodVal">3</div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Energie (1-5)</label>
-              <input type="range" id="refEnergy" min="1" max="5" value="3" class="w-full accent-emerald-500" oninput="document.getElementById('energyVal').textContent=this.value">
-              <div class="text-center text-sm text-emerald-500 font-bold mt-1" id="energyVal">3</div>
-            </div>
+            <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Stimmung (1-5)</label><input type="range" id="refMood" min="1" max="5" value="3" class="w-full accent-blue-600" oninput="document.getElementById('moodVal').textContent=this.value"><div class="text-center text-sm text-blue-600 font-bold mt-1" id="moodVal">3</div></div>
+            <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Energie (1-5)</label><input type="range" id="refEnergy" min="1" max="5" value="3" class="w-full accent-emerald-500" oninput="document.getElementById('energyVal').textContent=this.value"><div class="text-center text-sm text-emerald-500 font-bold mt-1" id="energyVal">3</div></div>
           </div>
         </div>
-
-        <button onclick="app.saveDayComplete()" class="w-full mt-6 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald/25">
-          Tag abschließen & speichern
-        </button>
+        <button onclick="app.saveDayComplete()" class="w-full mt-6 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald-200">Tag abschließen & speichern</button>
       </div>
     </div>
   </div>
@@ -387,29 +326,809 @@
     <div class="absolute inset-x-4 top-24 bg-white rounded-2xl border border-gray-100 max-w-lg mx-auto shadow-2xl max-h-[70vh] overflow-y-auto">
       <div class="p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Body-Einstellungen</h2>
-        <div class="mb-4">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Startgewicht (kg)</label>
-          <input type="number" id="startWeightInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
-        </div>
-        <div class="mb-4">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Zielgewicht (kg)</label>
-          <input type="number" id="targetWeightInput" value="89" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
-        </div>
-        <div class="mb-4">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start-Taille (cm) — optional</label>
-          <input type="number" id="startWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition">
-        </div>
-        <div class="mb-4">
-          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ziel-Taille (cm) — optional</label>
-          <input type="number" id="targetWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition">
-        </div>
-        <button onclick="app.saveWeightSettings()" class="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white transition font-bold shadow-lg shadow-primary/25">Speichern</button>
+        <div class="mb-4"><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Startgewicht (kg)</label><input type="number" id="startWeightInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
+        <div class="mb-4"><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Zielgewicht (kg)</label><input type="number" id="targetWeightInput" value="89" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
+        <div class="mb-4"><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start-Taille (cm) — optional</label><input type="number" id="startWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition"></div>
+        <div class="mb-4"><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ziel-Taille (cm) — optional</label><input type="number" id="targetWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition"></div>
+        <button onclick="app.saveWeightSettings()" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition font-bold shadow-lg shadow-blue-200">Speichern</button>
       </div>
     </div>
   </div>
 
-  <script src="js/db.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/app.js"></script>
+  <script>
+
+// ============ DB LAYER ============
+const DB_NAME = 'AcrybiaDB';
+const DB_VERSION = 2;
+
+class AcrybiaDB {
+  constructor() { this.db = null; }
+
+  async init() {
+    if (this.db) return;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => { this.db = req.result; resolve(); };
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('days')) {
+          const s = db.createObjectStore('days', { keyPath: 'date' });
+          s.createIndex('week', 'weekId', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('weekGoals')) {
+          const wg = db.createObjectStore('weekGoals', { keyPath: 'id', autoIncrement: true });
+          wg.createIndex('week', 'weekId', { unique: false });
+        }
+      };
+    });
+  }
+
+  uuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  getWeekId(dateStr) {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+    const w1 = new Date(d.getFullYear(), 0, 4);
+    const wn = 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7);
+    return d.getFullYear() + '-W' + String(wn).padStart(2, '0');
+  }
+
+  hydrateDay(raw) {
+    if (!raw) return null;
+    const day = { ...raw };
+    if (!day.tasks) day.tasks = [];
+    if (!day.body) day.body = {};
+    if (day.body.waist === undefined) day.body.waist = null;
+    if (!day.body.meals) day.body.meals = {};
+    if (!day.reflection) day.reflection = {};
+    if (!day.reflection.shame) day.reflection.shame = { experienced: false, when: '', why: '' };
+    if (!day.reflection.fear) day.reflection.fear = { experienced: false, why: '' };
+    if (day.completedWithOpenTasks === undefined) day.completedWithOpenTasks = false;
+    if (day.completed === undefined) day.completed = false;
+    return day;
+  }
+
+  createEmptyDay(date) {
+    return {
+      date, weekId: this.getWeekId(date), tasks: [],
+      reflection: { biggestProblem: { category: 'arbeit', text: '' }, blocker: '', blockerWhy: '', tags: [], mood: 3, energy: 3, shame: { experienced: false, when: '', why: '' }, fear: { experienced: false, why: '' } },
+      body: { weight: null, waist: null, meals: {}, protein: null },
+      completed: false, completedWithOpenTasks: false
+    };
+  }
+
+  async getDay(date) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('days', 'readonly');
+      const req = tx.objectStore('days').get(date);
+      req.onsuccess = () => resolve(req.result ? this.hydrateDay(req.result) : this.createEmptyDay(date));
+    });
+  }
+
+  async saveDay(day) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('days', 'readwrite');
+      tx.objectStore('days').put(day);
+      tx.oncomplete = () => resolve(day);
+    });
+  }
+
+  async getSettings(key) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('settings', 'readonly');
+      const req = tx.objectStore('settings').get(key);
+      req.onsuccess = () => resolve(req.result?.value);
+    });
+  }
+
+  async saveSettings(key, value) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('settings', 'readwrite');
+      tx.objectStore('settings').put({ key, value });
+      tx.oncomplete = resolve;
+    });
+  }
+
+  async getWeekGoals(weekId) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('weekGoals', 'readonly');
+      const req = tx.objectStore('weekGoals').index('week').getAll(weekId);
+      req.onsuccess = () => resolve(req.result || []);
+    });
+  }
+
+  async saveWeekGoal(goal) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('weekGoals', 'readwrite');
+      tx.objectStore('weekGoals').put(goal);
+      tx.oncomplete = resolve;
+    });
+  }
+
+  async deleteWeekGoal(id) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('weekGoals', 'readwrite');
+      tx.objectStore('weekGoals').delete(id);
+      tx.oncomplete = resolve;
+    });
+  }
+
+  async getAllDays() {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('days', 'readonly');
+      const req = tx.objectStore('days').getAll();
+      req.onsuccess = () => resolve((req.result || []).map(d => this.hydrateDay(d)));
+    });
+  }
+
+  async exportAll() {
+    const days = await this.getAllDays();
+    const settings = await new Promise((resolve) => {
+      const tx = this.db.transaction('settings', 'readonly');
+      const req = tx.objectStore('settings').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+    });
+    const weekGoals = await new Promise((resolve) => {
+      const tx = this.db.transaction('weekGoals', 'readonly');
+      const req = tx.objectStore('weekGoals').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+    });
+    return { days, settings, weekGoals, schemaVersion: 2, exportedAt: new Date().toISOString() };
+  }
+}
+
+const db = new AcrybiaDB();
+
+// ============ CHARTS ============
+const Charts = {
+  weightChart: null, waistChart: null,
+  initWeightChart() {
+    const ctx = document.getElementById('weightChart');
+    if (!ctx) return;
+    this.weightChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: ['Fortschritt', 'Verbleibend'], datasets: [{ data: [0, 100], backgroundColor: ['#f97316', '#f3f4f6'], borderWidth: 0, cutout: '75%' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  },
+  calcProgressPct(start, current, target) {
+    const denom = start - target;
+    if (!isFinite(denom) || denom === 0) return 0;
+    return Math.max(0, Math.min(100, ((start - current) / denom) * 100));
+  },
+  updateWeightChart(current, start, target) {
+    if (!this.weightChart) return;
+    const pct = this.calcProgressPct(start, current, target);
+    this.weightChart.data.datasets[0].data = [pct, 100 - pct];
+    this.weightChart.data.datasets[0].backgroundColor = [pct >= 100 ? '#10b981' : '#f97316', '#f3f4f6'];
+    this.weightChart.update();
+  },
+  initWaistChart() {
+    const ctx = document.getElementById('waistChart');
+    if (!ctx) return;
+    this.waistChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: ['Fortschritt', 'Verbleibend'], datasets: [{ data: [0, 100], backgroundColor: ['#a855f7', '#f3f4f6'], borderWidth: 0, cutout: '75%' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  },
+  updateWaistChart(current, start, target) {
+    if (!this.waistChart) return;
+    const pct = this.calcProgressPct(start, current, target);
+    this.waistChart.data.datasets[0].data = [pct, 100 - pct];
+    this.waistChart.data.datasets[0].backgroundColor = [pct >= 100 ? '#10b981' : '#a855f7', '#f3f4f6'];
+    this.waistChart.update();
+  }
+};
+
+// ============ APP ============
+const app = {
+  currentDate: new Date().toISOString().split('T')[0],
+  currentDay: null,
+  selectedCategory: null,
+  selectedSubcategory: null,
+  selectedPriority: 2,
+  selectedTags: [],
+  completingTaskId: null,
+  weightSettings: { startWeight: null, targetWeight: 89, startWaist: null, targetWaist: null },
+
+  categories: {
+    arbeit: { icon: 'briefcase', color: 'blue', label: 'Arbeit', subs: {
+      homeoffice: { label: 'Homeoffice', hasTime: true, detailType: 'blank' },
+      office: { label: 'Office', hasTime: true, detailType: 'subsub', children: {
+        fahrrad: { label: 'Fahrrad', hasTime: true, timeLabel: 'Arbeitsweg' },
+        oepnv: { label: 'Öffentliche Verkehrsmittel', hasTime: true, timeLabel: 'Arbeitsweg' }
+      }}
+    }},
+    acrybia: { icon: 'rocket', color: 'purple', label: 'Acrybia', subs: {
+      blank: { label: 'Blank (Selbst eingeben)', hasTime: true, detailType: 'text' }
+    }},
+    sport: { icon: 'dumbbell', color: 'orange', label: 'Sport', subs: {
+      krafttraining: { label: 'Krafttraining', hasTime: true },
+      schwimmen: { label: 'Schwimmen', hasTime: true },
+      boxen: { label: 'Boxen', hasTime: true },
+      fitnessboxen: { label: 'Fitness Boxen', hasTime: true },
+      pause: { label: 'Pause', hasTime: true }
+    }},
+    chinesisch: { icon: 'language', color: 'red', label: 'Chinesisch', subs: {
+      hsk1: { label: 'HSK 1', hasTime: true, detailType: 'hsk' },
+      hsk2: { label: 'HSK 2', hasTime: true, detailType: 'hsk' },
+      hsk3: { label: 'HSK 3', hasTime: true, detailType: 'hsk' },
+      hsk4: { label: 'HSK 4', hasTime: true, detailType: 'hsk' },
+      hsk5: { label: 'HSK 5', hasTime: true, detailType: 'hsk' },
+      hsk6: { label: 'HSK 6', hasTime: true, detailType: 'hsk' }
+    }},
+    custom: { icon: 'plus-circle', color: 'emerald', label: 'Weiteres', subs: {
+      blank: { label: 'Blank (Selbst eingeben)', hasTime: true, detailType: 'text' }
+    }}
+  },
+
+  async init() {
+    try {
+      const savedStart = await db.getSettings('startWeight');
+      const savedTarget = await db.getSettings('targetWeight');
+      const savedStartWaist = await db.getSettings('startWaist');
+      const savedTargetWaist = await db.getSettings('targetWaist');
+      if (savedStart !== undefined) this.weightSettings.startWeight = savedStart;
+      if (savedTarget !== undefined) this.weightSettings.targetWeight = savedTarget;
+      if (savedStartWaist !== undefined) this.weightSettings.startWaist = savedStartWaist;
+      if (savedTargetWaist !== undefined) this.weightSettings.targetWaist = savedTargetWaist;
+
+      await this.loadDay();
+
+      Charts.initWeightChart();
+      Charts.initWaistChart();
+      this.updateCharts();
+
+      this.renderWeekChallenges();
+      this.renderTasks();
+      this.renderBody();
+      this.renderWeekDayStrip();
+      this.renderTimeline();
+      this.renderWeekGoals();
+      this.updateDayCompleteButton();
+    } catch (e) {
+      console.error('Init error:', e);
+      alert('Fehler beim Starten: ' + e.message);
+    }
+  },
+
+  async loadDay() {
+    this.currentDay = await db.getDay(this.currentDate);
+  },
+
+  switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+    if (tab === 'dashboard') { this.renderWeekDayStrip(); this.renderTimeline(); }
+    if (tab === 'week') this.renderWeekGoals();
+    if (tab === 'tasks') { this.renderWeekChallenges(); this.renderTasks(); }
+  },
+
+  async renderWeekChallenges() {
+    const weekId = db.getWeekId(this.currentDate);
+    const goals = await db.getWeekGoals(weekId);
+    const container = document.getElementById('weekChallenges');
+    container.innerHTML = '';
+
+    if (goals.length === 0) {
+      container.innerHTML = '<div class="challenge-card bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl p-5 text-white shadow-lg"><p class="text-xs font-medium opacity-80 mb-1">Noch keine Ziele</p><h3 class="text-lg font-bold mb-3">Erstelle dein erstes Wochenziel</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:0%"></div></div><p class="text-xs opacity-70">0%</p></div><div class="challenge-card bg-gradient-to-br from-purple-500 to-purple-400 rounded-2xl p-5 text-white shadow-lg"><p class="text-xs font-medium opacity-80 mb-1">Tipp</p><h3 class="text-lg font-bold mb-3">Bleib konsistent</h3><p class="text-sm opacity-80">Trage täglich deine Tasks ein, um Fortschritte zu sehen.</p></div>';
+      return;
+    }
+
+    const colors = [['from-blue-600', 'to-blue-400', 'shadow-blue-200'], ['from-purple-500', 'to-purple-400', 'shadow-purple-200'], ['from-orange-500', 'to-orange-400', 'shadow-orange-200'], ['from-emerald-500', 'to-emerald-400', 'shadow-emerald-200']];
+    goals.forEach((goal, i) => {
+      const c = colors[i % colors.length];
+      const el = document.createElement('div');
+      el.className = 'challenge-card bg-gradient-to-br ' + c[0] + ' ' + c[1] + ' rounded-2xl p-5 text-white shadow-lg ' + c[2];
+      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + (Math.random() * 40 + 10) + '%"></div></div><p class="text-xs opacity-70">In Bearbeitung</p>';
+      container.appendChild(el);
+    });
+  },
+
+  renderTasks() {
+    const list = document.getElementById('tasksList');
+    list.innerHTML = '';
+    if (this.currentDay.tasks.length === 0) {
+      list.innerHTML = '<div class="text-center py-10"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-clipboard-list text-2xl text-gray-300"></i></div><p class="text-sm text-gray-400 font-medium">Noch keine Aufgaben für heute</p><p class="text-xs text-gray-300 mt-1">Tippe auf das + um zu starten</p></div>';
+      return;
+    }
+    const sorted = [...this.currentDay.tasks].sort((a, b) => a.priority - b.priority);
+    sorted.forEach(task => {
+      const cat = this.categories[task.category];
+      const sub = cat?.subs[task.subcategory];
+      const el = document.createElement('div');
+      el.className = 'task-item bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'completed' : '');
+      const timeStr = task.startTime && task.endTime ? task.startTime + '-' + task.endTime : (task.startTime || '');
+      const detailStr = task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '';
+      const achievementStr = task.achievement ? '<p class="text-xs text-emerald-500 mt-1 font-medium"><i class="fas fa-check mr-1"></i>' + task.achievement + '</p>' : '';
+      const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
+      const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
+      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal('' + task.id + '')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
+      list.appendChild(el);
+    });
+  },
+
+  renderWeekDayStrip() {
+    const strip = document.getElementById('weekDayStrip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() - today.getDay() + 1 + i);
+      const ds = d.toISOString().split('T')[0];
+      const isToday = ds === this.currentDate;
+      const dayNum = d.getDate();
+      const btn = document.createElement('button');
+      btn.className = 'day-strip-item w-11 h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition ' + (isToday ? 'active' : '');
+      btn.innerHTML = '<span class="text-[10px] font-medium opacity-70">' + dayNames[i] + '</span><span class="text-sm font-bold">' + dayNum + '</span>';
+      btn.onclick = () => {
+        this.currentDate = ds;
+        this.loadDay().then(() => { this.renderTimeline(); this.renderTasks(); });
+        document.querySelectorAll('.day-strip-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+      strip.appendChild(btn);
+    }
+  },
+
+  async renderTimeline() {
+    const container = document.getElementById('timelineView');
+    if (!container) return;
+    container.innerHTML = '';
+    const day = await db.getDay(this.currentDate);
+    const tasks = day.tasks || [];
+
+    if (tasks.length === 0) {
+      container.innerHTML = '<div class="text-center py-12"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-clock text-2xl text-gray-300"></i></div><p class="text-sm text-gray-400 font-medium">Keine Tasks für diesen Tag</p><p class="text-xs text-gray-300 mt-1">Wähle einen anderen Tag oder erstelle eine Aufgabe</p></div>';
+      return;
+    }
+
+    const sorted = [...tasks].sort((a, b) => {
+      if (!a.startTime) return 1;
+      if (!b.startTime) return -1;
+      return a.startTime.localeCompare(b.startTime);
+    });
+
+    sorted.forEach(task => {
+      const cat = this.categories[task.category];
+      const sub = cat?.subs[task.subcategory];
+      const el = document.createElement('div');
+      el.className = 'timeline-item mb-6';
+      const timeLabel = task.startTime || '––:––';
+      const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
+      const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
+      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + (task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '') + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal('' + task.id + '')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
+      container.appendChild(el);
+    });
+  },
+
+  openTaskModal() {
+    this.selectedCategory = null;
+    this.selectedSubcategory = null;
+    this.selectedPriority = 2;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('selected'));
+    const p2 = document.querySelector('[data-prio="2"]');
+    if (p2) p2.classList.add('selected');
+    document.getElementById('subcategorySection').classList.add('hidden');
+    document.getElementById('detailSection').classList.add('hidden');
+    document.getElementById('taskStart').value = '';
+    document.getElementById('taskEnd').value = '';
+    document.getElementById('taskModal').classList.remove('hidden');
+  },
+
+  closeTaskModal() {
+    document.getElementById('taskModal').classList.add('hidden');
+  },
+
+  selectCategory(cat) {
+    this.selectedCategory = cat;
+    this.selectedSubcategory = null;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-cat="' + cat + '"]').classList.add('selected');
+    this.renderSubcategories(cat);
+  },
+
+  renderSubcategories(cat) {
+    const cfg = this.categories[cat];
+    const grid = document.getElementById('subcategoryGrid');
+    grid.innerHTML = '';
+    Object.entries(cfg.subs).forEach(([key, sub]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sub-btn p-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-medium text-gray-700';
+      btn.textContent = sub.label;
+      btn.onclick = (e) => this.selectSubcategory(key, e);
+      grid.appendChild(btn);
+    });
+    document.getElementById('subcategorySection').classList.remove('hidden');
+    document.getElementById('detailSection').classList.add('hidden');
+  },
+
+  selectSubcategory(sub, evt) {
+    this.selectedSubcategory = sub;
+    document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('selected'));
+    if (evt && evt.target) evt.target.classList.add('selected');
+    this.renderDetailInput();
+  },
+
+  renderDetailInput() {
+    const cat = this.categories[this.selectedCategory];
+    const sub = cat.subs[this.selectedSubcategory];
+    const container = document.getElementById('detailInputContainer');
+    const section = document.getElementById('detailSection');
+    const label = document.getElementById('detailLabel');
+    container.innerHTML = '';
+
+    if (sub.detailType === 'subsub' && sub.children) {
+      label.textContent = 'Verkehrsmittel';
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-2 gap-2';
+      Object.entries(sub.children).forEach(([k, child]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'detail-sub-btn p-2.5 rounded-lg bg-gray-50 border-2 border-gray-100 text-xs font-medium text-gray-700 hover:border-blue-400 transition';
+        btn.textContent = child.label;
+        btn.onclick = () => {
+          document.querySelectorAll('.detail-sub-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          btn.dataset.value = k;
+        };
+        grid.appendChild(btn);
+      });
+      container.appendChild(grid);
+      section.classList.remove('hidden');
+      return;
+    }
+
+    if (sub.detailType === 'hsk') {
+      label.textContent = 'Thema';
+      const input1 = document.createElement('input');
+      input1.type = 'text';
+      input1.placeholder = 'Thema eingeben...';
+      input1.className = 'w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 mb-2 focus:outline-none focus:border-blue-500 transition';
+      input1.id = 'detailTopic';
+      const label2 = document.createElement('label');
+      label2.className = 'block text-xs text-gray-400 mb-1 mt-2 font-medium';
+      label2.textContent = 'Unterthemen (gelernt)';
+      const input2 = document.createElement('input');
+      input2.type = 'text';
+      input2.placeholder = 'z.B. Zahlen, Farben, Familie...';
+      input2.className = 'w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition';
+      input2.id = 'detailSubtopics';
+      container.appendChild(input1);
+      container.appendChild(label2);
+      container.appendChild(input2);
+      section.classList.remove('hidden');
+      return;
+    }
+
+    if (sub.detailType === 'text' || sub.detailType === 'blank') {
+      label.textContent = 'Beschreibung';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Was genau?...';
+      input.className = 'w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition';
+      input.id = 'detailText';
+      container.appendChild(input);
+      section.classList.remove('hidden');
+      return;
+    }
+
+    section.classList.add('hidden');
+  },
+
+  selectPriority(prio) {
+    this.selectedPriority = prio;
+    document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-prio="' + prio + '"]').classList.add('selected');
+  },
+
+  async saveTask() {
+    if (!this.selectedCategory || !this.selectedSubcategory) {
+      alert('Bitte Kategorie und Unterkategorie wählen');
+      return;
+    }
+    const cat = this.categories[this.selectedCategory];
+    const sub = cat.subs[this.selectedSubcategory];
+    let detail = '';
+    if (sub.detailType === 'subsub') {
+      const selected = document.querySelector('.detail-sub-btn.selected');
+      detail = selected ? selected.dataset.value : '';
+    } else if (sub.detailType === 'hsk') {
+      const topic = document.getElementById('detailTopic')?.value || '';
+      const subtopics = document.getElementById('detailSubtopics')?.value || '';
+      detail = topic + (subtopics ? ' | ' + subtopics : '');
+    } else {
+      detail = document.getElementById('detailText')?.value || '';
+    }
+
+    const task = {
+      id: db.uuid(),
+      category: this.selectedCategory,
+      subcategory: this.selectedSubcategory,
+      detail: detail,
+      startTime: document.getElementById('taskStart').value,
+      endTime: document.getElementById('taskEnd').value,
+      priority: this.selectedPriority,
+      completed: false,
+      achievement: ''
+    };
+
+    this.currentDay.tasks.push(task);
+    await db.saveDay(this.currentDay);
+    this.closeTaskModal();
+    this.renderTasks();
+    this.renderTimeline();
+    this.updateCharts();
+    this.updateDayCompleteButton();
+  },
+
+  openCompleteModal(taskId) {
+    this.completingTaskId = taskId;
+    document.getElementById('taskAchievement').value = '';
+    document.getElementById('completeTaskModal').classList.remove('hidden');
+  },
+
+  closeCompleteTaskModal() {
+    document.getElementById('completeTaskModal').classList.add('hidden');
+  },
+
+  async completeTask() {
+    const achievement = document.getElementById('taskAchievement').value;
+    const task = this.currentDay.tasks.find(t => t.id === this.completingTaskId);
+    if (task) {
+      task.completed = true;
+      task.achievement = achievement;
+      await db.saveDay(this.currentDay);
+      this.closeCompleteTaskModal();
+      this.renderTasks();
+      this.renderTimeline();
+      this.updateCharts();
+      this.updateDayCompleteButton();
+    }
+  },
+
+  updateDayCompleteButton() {
+    const openCount = this.currentDay.tasks.filter(t => !t.completed).length;
+    const btnText = document.getElementById('dayCompleteBtnText');
+    const btn = document.getElementById('dayCompleteBtn');
+    if (!btn || !btnText) return;
+    if (openCount > 0) {
+      btnText.textContent = 'Abschließen (' + openCount + ' offen)';
+      btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+      btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+    } else {
+      btnText.textContent = 'Tag abschließen';
+      btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+      btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+    }
+  },
+
+  openDayCompleteModal() {
+    const openCount = this.currentDay.tasks.filter(t => !t.completed).length;
+    const warning = document.getElementById('dayCompleteWarning');
+    if (openCount > 0) {
+      warning.textContent = 'Noch ' + openCount + ' offene Aufgabe(n) — trotzdem abschließen?';
+      warning.classList.remove('hidden');
+    } else {
+      warning.classList.add('hidden');
+    }
+    this.selectedTags = [];
+    document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('refProblemCat').value = 'arbeit';
+    document.getElementById('refProblemText').value = '';
+    document.getElementById('refBlocker').value = '';
+    document.getElementById('refBlockerWhy').value = '';
+    document.getElementById('refMood').value = 3;
+    document.getElementById('moodVal').textContent = '3';
+    document.getElementById('refEnergy').value = 3;
+    document.getElementById('energyVal').textContent = '3';
+    document.getElementById('shameToggle').checked = false;
+    document.getElementById('shameFields').classList.add('hidden');
+    document.getElementById('shameWhen').value = '';
+    document.getElementById('shameWhy').value = '';
+    document.getElementById('fearToggle').checked = false;
+    document.getElementById('fearFields').classList.add('hidden');
+    document.getElementById('fearWhy').value = '';
+    document.getElementById('dayCompleteModal').classList.remove('hidden');
+  },
+
+  toggleShame() {
+    const checked = document.getElementById('shameToggle').checked;
+    document.getElementById('shameFields').classList.toggle('hidden', !checked);
+  },
+
+  toggleFear() {
+    const checked = document.getElementById('fearToggle').checked;
+    document.getElementById('fearFields').classList.toggle('hidden', !checked);
+  },
+
+  toggleTag(btn, tag) {
+    btn.classList.toggle('selected');
+    if (this.selectedTags.includes(tag)) {
+      this.selectedTags = this.selectedTags.filter(t => t !== tag);
+    } else {
+      this.selectedTags.push(tag);
+    }
+  },
+
+  async saveDayComplete() {
+    const openCount = this.currentDay.tasks.filter(t => !t.completed).length;
+    this.currentDay.completedWithOpenTasks = openCount > 0;
+    this.currentDay.completed = true;
+    this.currentDay.reflection = {
+      biggestProblem: { category: document.getElementById('refProblemCat').value, text: document.getElementById('refProblemText').value },
+      blocker: document.getElementById('refBlocker').value,
+      blockerWhy: document.getElementById('refBlockerWhy').value,
+      tags: [...this.selectedTags],
+      mood: parseInt(document.getElementById('refMood').value),
+      energy: parseInt(document.getElementById('refEnergy').value),
+      shame: { experienced: document.getElementById('shameToggle').checked, when: document.getElementById('shameWhen').value, why: document.getElementById('shameWhy').value },
+      fear: { experienced: document.getElementById('fearToggle').checked, why: document.getElementById('fearWhy').value }
+    };
+    await db.saveDay(this.currentDay);
+    document.getElementById('dayCompleteModal').classList.add('hidden');
+    this.updateCharts();
+    this.updateDayCompleteButton();
+    alert('Tag abgeschlossen! Gut gemacht!');
+  },
+
+  async saveWeight() {
+    const val = parseFloat(document.getElementById('weightInput').value);
+    if (!val) return;
+    if (!this.weightSettings.startWeight) {
+      this.weightSettings.startWeight = val;
+      await db.saveSettings('startWeight', val);
+    }
+    this.currentDay.body.weight = val;
+    await db.saveDay(this.currentDay);
+    this.renderBody();
+    this.updateCharts();
+  },
+
+  async saveWaist() {
+    const val = parseFloat(document.getElementById('waistInput').value);
+    if (!val) return;
+    if (!this.weightSettings.startWaist) {
+      this.weightSettings.startWaist = val;
+      await db.saveSettings('startWaist', val);
+    }
+    this.currentDay.body.waist = val;
+    await db.saveDay(this.currentDay);
+    this.renderBody();
+    this.updateCharts();
+  },
+
+  async saveBody() {
+    this.currentDay.body.meals = {
+      morning: document.getElementById('mealMorning').value,
+      lunch: document.getElementById('mealLunch').value,
+      dinner: document.getElementById('mealDinner').value,
+      snack: document.getElementById('mealSnack').value
+    };
+    this.currentDay.body.protein = parseInt(document.getElementById('proteinInput').value) || null;
+    await db.saveDay(this.currentDay);
+    alert('Body-Daten gespeichert!');
+  },
+
+  renderBody() {
+    const body = this.currentDay.body;
+    document.getElementById('currentWeightDisplay').textContent = body.weight || '--';
+    document.getElementById('weightInput').value = body.weight || '';
+    document.getElementById('currentWaistDisplay').textContent = body.waist || '--';
+    document.getElementById('waistInput').value = body.waist || '';
+    document.getElementById('mealMorning').value = body.meals?.morning || '';
+    document.getElementById('mealLunch').value = body.meals?.lunch || '';
+    document.getElementById('mealDinner').value = body.meals?.dinner || '';
+    document.getElementById('mealSnack').value = body.meals?.snack || '';
+    document.getElementById('proteinInput').value = body.protein || '';
+  },
+
+  openWeightSettings() {
+    document.getElementById('startWeightInput').value = this.weightSettings.startWeight || '';
+    document.getElementById('targetWeightInput').value = this.weightSettings.targetWeight;
+    document.getElementById('startWaistInput').value = this.weightSettings.startWaist || '';
+    document.getElementById('targetWaistInput').value = this.weightSettings.targetWaist || '';
+    document.getElementById('weightSettingsModal').classList.remove('hidden');
+  },
+
+  closeWeightSettings() {
+    document.getElementById('weightSettingsModal').classList.add('hidden');
+  },
+
+  async saveWeightSettings() {
+    this.weightSettings.startWeight = parseFloat(document.getElementById('startWeightInput').value) || null;
+    this.weightSettings.targetWeight = parseFloat(document.getElementById('targetWeightInput').value) || 89;
+    this.weightSettings.startWaist = parseFloat(document.getElementById('startWaistInput').value) || null;
+    this.weightSettings.targetWaist = parseFloat(document.getElementById('targetWaistInput').value) || null;
+    await db.saveSettings('startWeight', this.weightSettings.startWeight);
+    await db.saveSettings('targetWeight', this.weightSettings.targetWeight);
+    await db.saveSettings('startWaist', this.weightSettings.startWaist);
+    await db.saveSettings('targetWaist', this.weightSettings.targetWaist);
+    this.closeWeightSettings();
+    this.updateCharts();
+  },
+
+  updateCharts() {
+    const body = this.currentDay.body;
+    if (body.weight && this.weightSettings.startWeight && this.weightSettings.targetWeight) {
+      Charts.updateWeightChart(body.weight, this.weightSettings.startWeight, this.weightSettings.targetWeight);
+    }
+    if (body.waist && this.weightSettings.startWaist && this.weightSettings.targetWaist) {
+      Charts.updateWaistChart(body.waist, this.weightSettings.startWaist, this.weightSettings.targetWaist);
+    }
+  },
+
+  async renderWeekGoals() {
+    const weekId = db.getWeekId(this.currentDate);
+    const goals = await db.getWeekGoals(weekId);
+    const container = document.getElementById('weekGoals');
+    container.innerHTML = '';
+    if (goals.length === 0) {
+      container.innerHTML = '<div class="text-center py-10"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-bullseye text-2xl text-gray-300"></i></div><p class="text-sm text-gray-400 font-medium">Noch keine Wochenziele</p><p class="text-xs text-gray-300 mt-1">Füge oben ein Ziel hinzu</p></div>';
+      return;
+    }
+    goals.forEach(goal => {
+      const el = document.createElement('div');
+      el.className = 'flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm';
+      el.innerHTML = '<div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full dot-' + goal.category + '"></div><div><p class="text-sm font-semibold text-gray-900">' + goal.text + '</p><p class="text-xs text-gray-400">' + (this.categories[goal.category]?.label || goal.category) + '</p></div></div><button onclick="app.deleteWeekGoalItem(' + goal.id + ')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center transition text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>';
+      container.appendChild(el);
+    });
+  },
+
+  async addWeekGoal() {
+    const text = prompt('Wochenziel:');
+    if (!text) return;
+    const category = prompt('Kategorie (arbeit/acrybia/sport/chinesisch/custom):', 'arbeit');
+    if (!category) return;
+    const goal = { weekId: db.getWeekId(this.currentDate), text, category, created: new Date().toISOString() };
+    await db.saveWeekGoal(goal);
+    this.renderWeekGoals();
+    this.renderWeekChallenges();
+  },
+
+  async deleteWeekGoalItem(id) {
+    if (!confirm('Wirklich löschen?')) return;
+    await db.deleteWeekGoal(id);
+    this.renderWeekGoals();
+    this.renderWeekChallenges();
+  },
+
+  async exportData() {
+    const data = await db.exportAll();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'acrybia-export-' + this.currentDate + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
 </body>
 </html>
