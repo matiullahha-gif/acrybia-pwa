@@ -1,7 +1,7 @@
-const CACHE_NAME = 'acrybia-v2';
+const CACHE_NAME = 'acrybia-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+  './',
+  './index.html',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
@@ -29,7 +29,7 @@ self.addEventListener('fetch', (e) => {
       if (cached) return cached;
       return fetch(e.request).catch(() => {
         if (e.request.destination === 'document') {
-          return caches.match('/index.html');
+          return caches.match('./index.html');
         }
       });
     })

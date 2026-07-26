@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#ffffff">
   <title>Acrybia Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Acrybia">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%234F46E5' width='192' height='192' rx='48'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='white'%3EA%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -662,7 +667,7 @@ const app = {
       const achievementStr = task.achievement ? '<p class="text-xs text-emerald-500 mt-1 font-medium"><i class="fas fa-check mr-1"></i>' + task.achievement + '</p>' : '';
       const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
-      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal('' + task.id + '')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
+      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
       list.appendChild(el);
     });
   },
@@ -718,7 +723,7 @@ const app = {
       const timeLabel = task.startTime || '––:––';
       const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
-      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + (task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '') + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal('' + task.id + '')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
+      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + (task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '') + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
       container.appendChild(el);
     });
   },
@@ -1129,6 +1134,13 @@ const app = {
 };
 
 document.addEventListener('DOMContentLoaded', () => app.init());
+
+// Service Worker registrieren (relativer Pfad → funktioniert auch im Unterordner)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW-Registrierung fehlgeschlagen:', err));
+  });
+}
   </script>
 </body>
 </html>
