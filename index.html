@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ffffff">
+  <title>Acrybia Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4F46E5',
+            'primary-light': '#818CF8',
+            'primary-dark': '#3730A3',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-x-hidden pb-24">
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
+    <div class="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-sm shadow-md">
+          AL
+        </div>
+        <div>
+          <p class="text-xs text-gray-400">Guten Tag</p>
+          <h1 class="text-lg font-bold text-gray-900 leading-tight">Acrybia</h1>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600">
+          <i class="fas fa-download text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="pt-20 max-w-lg mx-auto px-5">
+
+    <!-- TAB: HOME / TASKS -->
+    <div id="tab-tasks" class="tab-content">
+      <!-- Weekly Challenges / Wochenziele -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-bold text-gray-900">Wochenziele</h2>
+          <button onclick="app.switchTab('week')" class="text-xs text-primary font-semibold flex items-center gap-1">
+            Alle ansehen <i class="fas fa-chevron-right text-[10px]"></i>
+          </button>
+        </div>
+        <div id="weekChallenges" class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+          <!-- Wird dynamisch gefüllt -->
+        </div>
+      </div>
+
+      <!-- Task for you -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-bold text-gray-900">Deine Tasks</h2>
+          <button onclick="app.switchTab('dashboard')" class="text-xs text-primary font-semibold flex items-center gap-1">
+            Zeitplan <i class="fas fa-chevron-right text-[10px]"></i>
+          </button>
+        </div>
+        <div id="tasksList" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- TAB: SCHEDULE / DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content hidden">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Zeitplan</h2>
+
+      <!-- Week Day Strip -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <div id="weekDayStrip" class="flex justify-between items-center">
+          <!-- Dynamisch gefüllt -->
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div id="timelineView" class="space-y-0">
+        <!-- Dynamisch gefüllt -->
+      </div>
+    </div>
+
+    <!-- TAB: BODY -->
+    <div id="tab-body" class="tab-content hidden">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Body</h2>
+
+      <!-- Weight Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Gewicht</p>
+            <p class="text-2xl font-bold text-gray-900"><span id="currentWeightDisplay">--</span> <span class="text-sm text-gray-400 font-normal">kg</span></p>
+          </div>
+          <div class="w-16 h-16 relative">
+            <canvas id="weightChart"></canvas>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <input type="number" id="weightInput" step="0.1" placeholder="95.5" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-sm">
+          <button onclick="app.saveWeight()" class="px-5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-primary/25">Speichern</button>
+        </div>
+      </div>
+
+      <!-- Waist Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Taille</p>
+            <p class="text-2xl font-bold text-gray-900"><span id="currentWaistDisplay">--</span> <span class="text-sm text-gray-400 font-normal">cm</span></p>
+          </div>
+          <div class="w-16 h-16 relative">
+            <canvas id="waistChart"></canvas>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <input type="number" id="waistInput" step="0.1" placeholder="98" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-sm">
+          <button onclick="app.saveWaist()" class="px-5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-purple/25">Speichern</button>
+        </div>
+      </div>
+
+      <!-- Meals -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-gray-900">Ernährung</h3>
+          <button onclick="app.openWeightSettings()" class="text-gray-400 hover:text-primary transition"><i class="fas fa-cog"></i></button>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Morgens</label>
+          <input type="text" id="mealMorning" placeholder="Haferflocken, Banane..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Mittags</label>
+          <input type="text" id="mealLunch" placeholder="Hähnchen, Reis..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Abends</label>
+          <input type="text" id="mealDinner" placeholder="Fisch, Gemüse..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Snack</label>
+          <input type="text" id="mealSnack" placeholder="Nüsse, Proteinriegel..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Protein (g)</label>
+          <input type="number" id="proteinInput" placeholder="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+        </div>
+        <button onclick="app.saveBody()" class="w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition shadow-lg shadow-primary/25">Body-Daten speichern</button>
+      </div>
+    </div>
+
+    <!-- TAB: WEEK GOALS -->
+    <div id="tab-week" class="tab-content hidden">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Wochenziele</h2>
+      <div id="weekGoals" class="space-y-3"></div>
+      <button onclick="app.addWeekGoal()" class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:text-primary hover:border-primary transition text-sm font-semibold flex items-center justify-center gap-2">
+        <i class="fas fa-plus"></i> Wochenziel hinzufügen
+      </button>
+    </div>
+  </main>
+
+  <!-- Floating Action Button -->
+  <button onclick="app.openTaskModal()" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-xl shadow-primary/40 flex items-center justify-center transition transform hover:scale-110 active:scale-95">
+    <i class="fas fa-plus text-xl"></i>
+  </button>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 pb-safe">
+    <div class="max-w-lg mx-auto flex justify-around items-center py-2 px-4">
+      <button onclick="app.switchTab('tasks')" class="nav-btn active flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="tasks">
+        <i class="fas fa-home text-lg mb-0.5"></i>
+        <span class="text-[10px] font-medium">Home</span>
+      </button>
+      <button onclick="app.switchTab('dashboard')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="dashboard">
+        <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
+        <span class="text-[10px] font-medium">Plan</span>
+      </button>
+      <div class="w-14"></div> <!-- Spacer for FAB -->
+      <button onclick="app.switchTab('week')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="week">
+        <i class="fas fa-list-check text-lg mb-0.5"></i>
+        <span class="text-[10px] font-medium">Ziele</span>
+      </button>
+      <button onclick="app.switchTab('body')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="body">
+        <i class="fas fa-user text-lg mb-0.5"></i>
+        <span class="text-[10px] font-medium">Body</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Task Modal -->
+  <div id="taskModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeTaskModal()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl border-t border-gray-100 max-h-[92vh] overflow-y-auto">
+      <div class="p-6 max-w-lg mx-auto">
+        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Neue Aufgabe</h2>
+
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategorie</label>
+          <div class="grid grid-cols-2 gap-2.5" id="categoryGrid">
+            <button type="button" onclick="app.selectCategory('arbeit')" class="cat-btn p-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-medium text-gray-700 flex items-center gap-2" data-cat="arbeit">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-briefcase text-xs"></i></div>Arbeit
+            </button>
+            <button type="button" onclick="app.selectCategory('acrybia')" class="cat-btn p-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-purple-400 transition text-sm font-medium text-gray-700 flex items-center gap-2" data-cat="acrybia">
+              <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fas fa-rocket text-xs"></i></div>Acrybia
+            </button>
+            <button type="button" onclick="app.selectCategory('sport')" class="cat-btn p-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-orange-400 transition text-sm font-medium text-gray-700 flex items-center gap-2" data-cat="sport">
+              <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fas fa-dumbbell text-xs"></i></div>Sport
+            </button>
+            <button type="button" onclick="app.selectCategory('chinesisch')" class="cat-btn p-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-red-400 transition text-sm font-medium text-gray-700 flex items-center gap-2" data-cat="chinesisch">
+              <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center"><i class="fas fa-language text-xs"></i></div>Chinesisch
+            </button>
+            <button type="button" onclick="app.selectCategory('custom')" class="cat-btn p-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-emerald-400 transition text-sm font-medium text-gray-700 flex items-center gap-2 col-span-2" data-cat="custom">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-plus-circle text-xs"></i></div>Weiteres Thema
+            </button>
+          </div>
+        </div>
+
+        <div id="subcategorySection" class="mb-4 hidden">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Unterkategorie</label>
+          <div id="subcategoryGrid" class="grid grid-cols-2 gap-2"></div>
+        </div>
+
+        <div id="detailSection" class="mb-4 hidden">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2" id="detailLabel">Details</label>
+          <div id="detailInputContainer"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start</label>
+            <input type="time" id="taskStart" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ende</label>
+            <input type="time" id="taskEnd" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Priorität</label>
+          <div class="flex gap-2">
+            <button type="button" onclick="app.selectPriority(1)" class="prio-btn flex-1 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-red-400 transition text-sm font-bold text-gray-600" data-prio="1">High</button>
+            <button type="button" onclick="app.selectPriority(2)" class="prio-btn flex-1 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-yellow-400 transition text-sm font-bold text-gray-600" data-prio="2">Medium</button>
+            <button type="button" onclick="app.selectPriority(3)" class="prio-btn flex-1 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-bold text-gray-600" data-prio="3">Low</button>
+          </div>
+        </div>
+
+        <button onclick="app.saveTask()" class="w-full py-4 rounded-xl bg-primary hover:bg-primary-dark text-white active:scale-95 transition font-bold shadow-lg shadow-primary/25">
+          Aufgabe erstellen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Task Modal -->
+  <div id="completeTaskModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeCompleteTaskModal()"></div>
+    <div class="absolute inset-x-4 top-24 bg-white rounded-2xl border border-gray-100 max-w-lg mx-auto shadow-2xl">
+      <div class="p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Aufgabe abschließen</h2>
+        <p class="text-sm text-gray-400 mb-4">Was hast du erreicht?</p>
+        <textarea id="taskAchievement" rows="3" placeholder="Beschreibe dein Ergebnis..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition mb-4"></textarea>
+        <button onclick="app.completeTask()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald/25">
+          <i class="fas fa-check mr-2"></i>Abschließen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Complete Modal -->
+  <div id="dayCompleteModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-x-3 top-8 bottom-8 bg-white rounded-3xl border border-gray-100 max-w-lg mx-auto overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-trophy text-2xl text-emerald-500"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900">Tagesabschluss!</h2>
+          <p class="text-sm text-gray-400 mt-1">Zeit für Reflexion.</p>
+          <p id="dayCompleteWarning" class="hidden text-xs text-amber-500 mt-2 font-semibold bg-amber-50 rounded-lg py-1.5 px-3 inline-block"></p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Womit hattest du am meisten Probleme?</label>
+            <select id="refProblemCat" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 mb-2 focus:outline-none focus:border-primary transition">
+              <option value="arbeit">Arbeit</option>
+              <option value="acrybia">Acrybia</option>
+              <option value="sport">Sport</option>
+              <option value="chinesisch">Chinesisch</option>
+              <option value="body">Body/Ernährung</option>
+              <option value="other">Andere</option>
+            </select>
+            <textarea id="refProblemText" rows="2" placeholder="Beschreibung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Was hat dich aufgehalten?</label>
+            <textarea id="refBlocker" rows="2" placeholder="z.B. Müdigkeit, Ablenkung..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Warum?</label>
+            <textarea id="refBlockerWhy" rows="2" placeholder="Ursache analysieren..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+          </div>
+
+          <!-- Scham-Block -->
+          <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="shameToggle" onchange="app.toggleShame()" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+              <span class="text-sm font-semibold text-gray-700">Hast du heute Scham erlebt?</span>
+            </label>
+            <div id="shameFields" class="hidden mt-3 space-y-2">
+              <div>
+                <label class="text-xs text-gray-400 mb-1 block font-medium">Wann?</label>
+                <input type="text" id="shameWhen" placeholder="Situation beschreiben..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition">
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 mb-1 block font-medium">Warum?</label>
+                <textarea id="shameWhy" rows="2" placeholder="Auslöser / Grund..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Angst-Block -->
+          <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="fearToggle" onchange="app.toggleFear()" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+              <span class="text-sm font-semibold text-gray-700">Hast du heute Angst erlebt?</span>
+            </label>
+            <div id="fearFields" class="hidden mt-3">
+              <label class="text-xs text-gray-400 mb-1 block font-medium">Warum?</label>
+              <textarea id="fearWhy" rows="2" placeholder="Grund der Angst..." class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary transition"></textarea>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tags</label>
+            <div class="flex flex-wrap gap-2" id="refTags">
+              <button type="button" onclick="app.toggleTag(this, 'müdigkeit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Müdigkeit</button>
+              <button type="button" onclick="app.toggleTag(this, 'zeitdruck')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Zeitdruck</button>
+              <button type="button" onclick="app.toggleTag(this, 'ablenkung')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Ablenkung</button>
+              <button type="button" onclick="app.toggleTag(this, 'technik')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Technik</button>
+              <button type="button" onclick="app.toggleTag(this, 'gesundheit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Gesundheit</button>
+              <button type="button" onclick="app.toggleTag(this, 'motivation')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-primary hover:text-primary transition font-medium">Motivation</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Stimmung (1-5)</label>
+              <input type="range" id="refMood" min="1" max="5" value="3" class="w-full accent-primary" oninput="document.getElementById('moodVal').textContent=this.value">
+              <div class="text-center text-sm text-primary font-bold mt-1" id="moodVal">3</div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Energie (1-5)</label>
+              <input type="range" id="refEnergy" min="1" max="5" value="3" class="w-full accent-emerald-500" oninput="document.getElementById('energyVal').textContent=this.value">
+              <div class="text-center text-sm text-emerald-500 font-bold mt-1" id="energyVal">3</div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="app.saveDayComplete()" class="w-full mt-6 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald/25">
+          Tag abschließen & speichern
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weight Settings Modal -->
+  <div id="weightSettingsModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeWeightSettings()"></div>
+    <div class="absolute inset-x-4 top-24 bg-white rounded-2xl border border-gray-100 max-w-lg mx-auto shadow-2xl max-h-[70vh] overflow-y-auto">
+      <div class="p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Body-Einstellungen</h2>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Startgewicht (kg)</label>
+          <input type="number" id="startWeightInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Zielgewicht (kg)</label>
+          <input type="number" id="targetWeightInput" value="89" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-primary transition">
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start-Taille (cm) — optional</label>
+          <input type="number" id="startWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition">
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ziel-Taille (cm) — optional</label>
+          <input type="number" id="targetWaistInput" step="0.1" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-400 transition">
+        </div>
+        <button onclick="app.saveWeightSettings()" class="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white transition font-bold shadow-lg shadow-primary/25">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
