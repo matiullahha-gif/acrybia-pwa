@@ -70,9 +70,15 @@
           <h1 class="text-lg font-bold text-gray-900 leading-tight">Acrybia</h1>
         </div>
       </div>
-      <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600">
-        <i class="fas fa-download text-sm"></i>
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="document.getElementById('importFile').click()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600" title="Backup importieren">
+          <i class="fas fa-upload text-sm"></i>
+        </button>
+        <input type="file" id="importFile" accept="application/json" class="hidden" onchange="app.importData(event)">
+        <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600" title="Backup exportieren">
+          <i class="fas fa-download text-sm"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -113,6 +119,35 @@
       <div id="timelineView" class="space-y-0"></div>
     </div>
 
+    <!-- TAB: STATISTIK -->
+    <div id="tab-stats" class="tab-content hidden">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Statistik</h2>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Sport diese Woche</h3>
+      <div id="statSport" class="mb-5"></div>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Anfahrt diese Woche</h3>
+      <div id="weekStats" class="mb-5"></div>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Gewichtsverlauf</h3>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
+        <div id="weightHistoryEmpty" class="text-xs text-gray-300 hidden">Noch nicht genug Gewichtseinträge für einen Verlauf.</div>
+        <div style="height:200px"><canvas id="weightHistoryChart"></canvas></div>
+      </div>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Stimmung &amp; Energie</h3>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
+        <div id="moodEnergyEmpty" class="text-xs text-gray-300 hidden">Noch nicht genug abgeschlossene Tage für einen Verlauf.</div>
+        <div style="height:180px"><canvas id="moodEnergyChart"></canvas></div>
+      </div>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Aufgaben nach Kategorie (Woche)</h3>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
+        <div id="categoryEmpty" class="text-xs text-gray-300 hidden">Diese Woche noch keine Aufgaben.</div>
+        <div style="height:220px"><canvas id="categoryChart"></canvas></div>
+      </div>
+    </div>
+
     <!-- TAB: BODY -->
     <div id="tab-body" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Body</h2>
@@ -121,9 +156,11 @@
           <div>
             <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Gewicht</p>
             <p class="text-2xl font-bold text-gray-900"><span id="currentWeightDisplay">--</span> <span class="text-sm text-gray-400 font-normal">kg</span></p>
+            <div id="weightDelta" class="mt-1"></div>
           </div>
           <div class="w-16 h-16 relative"><canvas id="weightChart"></canvas></div>
         </div>
+        <div id="weightTrack" class="mb-3"></div>
         <div class="flex gap-2">
           <input type="number" id="weightInput" step="0.1" placeholder="95.5" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition text-sm">
           <button onclick="app.saveWeight()" class="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-blue-200">Speichern</button>
@@ -135,9 +172,11 @@
           <div>
             <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Taille</p>
             <p class="text-2xl font-bold text-gray-900"><span id="currentWaistDisplay">--</span> <span class="text-sm text-gray-400 font-normal">cm</span></p>
+            <div id="waistDelta" class="mt-1"></div>
           </div>
           <div class="w-16 h-16 relative"><canvas id="waistChart"></canvas></div>
         </div>
+        <div id="waistTrack" class="mb-3"></div>
         <div class="flex gap-2">
           <input type="number" id="waistInput" step="0.1" placeholder="98" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition text-sm">
           <button onclick="app.saveWaist()" class="px-5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition text-sm shadow-lg shadow-purple-200">Speichern</button>
@@ -155,6 +194,16 @@
         <div><label class="text-xs text-gray-400 mb-1 block font-medium">Snack</label><input type="text" id="mealSnack" placeholder="Nüsse, Proteinriegel..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
         <div><label class="text-xs text-gray-400 mb-1 block font-medium">Protein (g)</label><input type="number" id="proteinInput" placeholder="120" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"></div>
         <button onclick="app.saveBody()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-lg shadow-blue-200">Body-Daten speichern</button>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+        <h3 class="font-bold text-gray-900 mb-1">Einnahme heute</h3>
+        <p class="text-xs text-gray-400 mb-3">Was hast du heute genommen? (z.B. Peptide, Medikamente)</p>
+        <div class="flex gap-2 mb-3">
+          <input type="text" id="intakeInput" placeholder="z.B. Mounjaro 5mg, BPC-157, TB-500..." onkeydown="if(event.key==='Enter'){event.preventDefault();app.addIntake();}" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition">
+          <button onclick="app.addIntake()" class="px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-200"><i class="fas fa-plus text-sm"></i></button>
+        </div>
+        <div id="intakeList" class="space-y-2"></div>
       </div>
     </div>
 
@@ -176,17 +225,20 @@
   <!-- Bottom Navigation -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 pb-safe">
     <div class="max-w-lg mx-auto flex justify-around items-center py-2 px-4">
-      <button onclick="app.switchTab('tasks')" class="nav-btn active flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="tasks">
+      <button onclick="app.switchTab('tasks')" class="nav-btn active flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="tasks">
         <i class="fas fa-home text-lg mb-0.5"></i><span class="text-[10px] font-medium">Home</span>
       </button>
-      <button onclick="app.switchTab('dashboard')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="dashboard">
+      <button onclick="app.switchTab('dashboard')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="dashboard">
         <i class="fas fa-calendar-alt text-lg mb-0.5"></i><span class="text-[10px] font-medium">Plan</span>
       </button>
+      <button onclick="app.switchTab('stats')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="stats">
+        <i class="fas fa-chart-pie text-lg mb-0.5"></i><span class="text-[10px] font-medium">Statistik</span>
+      </button>
       <div class="w-14"></div>
-      <button onclick="app.switchTab('week')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="week">
+      <button onclick="app.switchTab('week')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="week">
         <i class="fas fa-list-check text-lg mb-0.5"></i><span class="text-[10px] font-medium">Ziele</span>
       </button>
-      <button onclick="app.switchTab('body')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[60px]" data-tab="body">
+      <button onclick="app.switchTab('body')" class="nav-btn flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="body">
         <i class="fas fa-user text-lg mb-0.5"></i><span class="text-[10px] font-medium">Body</span>
       </button>
     </div>
@@ -198,7 +250,7 @@
     <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl border-t border-gray-100 max-h-[92vh] overflow-y-auto">
       <div class="p-6 max-w-lg mx-auto">
         <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
-        <h2 class="text-xl font-bold text-gray-900 mb-6">Neue Aufgabe</h2>
+        <h2 id="taskModalTitle" class="text-xl font-bold text-gray-900 mb-6">Neue Aufgabe</h2>
         <div class="mb-4">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategorie</label>
           <div class="grid grid-cols-2 gap-2.5" id="categoryGrid">
@@ -239,7 +291,7 @@
             <button type="button" onclick="app.selectPriority(3)" class="prio-btn flex-1 py-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-bold text-gray-600" data-prio="3">Low</button>
           </div>
         </div>
-        <button onclick="app.saveTask()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white active:scale-95 transition font-bold shadow-lg shadow-blue-200">Aufgabe erstellen</button>
+        <button id="taskSaveBtn" onclick="app.saveTask()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white active:scale-95 transition font-bold shadow-lg shadow-blue-200">Aufgabe erstellen</button>
       </div>
     </div>
   </div>
@@ -393,6 +445,7 @@ class AcrybiaDB {
     if (!day.body) day.body = {};
     if (day.body.waist === undefined) day.body.waist = null;
     if (!day.body.meals) day.body.meals = {};
+    if (!Array.isArray(day.body.intake)) day.body.intake = [];
     if (!day.reflection) day.reflection = {};
     if (!day.reflection.shame) day.reflection.shame = { experienced: false, when: '', why: '' };
     if (!day.reflection.fear) day.reflection.fear = { experienced: false, why: '' };
@@ -405,7 +458,7 @@ class AcrybiaDB {
     return {
       date, weekId: this.getWeekId(date), tasks: [],
       reflection: { biggestProblem: { category: 'arbeit', text: '' }, blocker: '', blockerWhy: '', tags: [], mood: 3, energy: 3, shame: { experienced: false, when: '', why: '' }, fear: { experienced: false, why: '' } },
-      body: { weight: null, waist: null, meals: {}, protein: null },
+      body: { weight: null, waist: null, meals: {}, protein: null, intake: [] },
       completed: false, completedWithOpenTasks: false
     };
   }
@@ -496,6 +549,29 @@ class AcrybiaDB {
     });
     return { days, settings, weekGoals, schemaVersion: 2, exportedAt: new Date().toISOString() };
   }
+
+  async importAll(data) {
+    await this.init();
+    const putAll = (storeName, items) => new Promise((resolve, reject) => {
+      if (!Array.isArray(items) || items.length === 0) return resolve();
+      const tx = this.db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      items.forEach(it => {
+        try {
+          if (storeName === 'weekGoals' && (it.id === undefined || it.id === null)) {
+            const { id, ...rest } = it; store.put(rest);
+          } else {
+            store.put(it);
+          }
+        } catch (e) { console.log('Import-Eintrag übersprungen', e); }
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    await putAll('days', (data.days || []).map(d => this.hydrateDay(d)));
+    await putAll('settings', data.settings || []);
+    await putAll('weekGoals', data.weekGoals || []);
+  }
 }
 
 const db = new AcrybiaDB();
@@ -539,6 +615,67 @@ const Charts = {
     this.waistChart.data.datasets[0].data = [pct, 100 - pct];
     this.waistChart.data.datasets[0].backgroundColor = [pct >= 100 ? '#10b981' : '#a855f7', '#f3f4f6'];
     this.waistChart.update();
+  },
+
+  moodEnergyChart: null,
+  categoryChart: null,
+  weightHistoryChart: null,
+
+  clearMoodEnergy() { if (this.moodEnergyChart) { this.moodEnergyChart.destroy(); this.moodEnergyChart = null; } },
+  clearCategory() { if (this.categoryChart) { this.categoryChart.destroy(); this.categoryChart = null; } },
+  clearWeightHistory() { if (this.weightHistoryChart) { this.weightHistoryChart.destroy(); this.weightHistoryChart = null; } },
+
+  renderWeightHistory(labels, weights, target) {
+    const ctx = document.getElementById('weightHistoryChart');
+    if (!ctx) return;
+    this.clearWeightHistory();
+    const datasets = [{ label: 'Gewicht', data: weights, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)', fill: true, tension: 0.3, spanGaps: true, pointRadius: 2 }];
+    if (typeof target === 'number') {
+      datasets.push({ label: 'Ziel', data: labels.map(() => target), borderColor: '#10b981', borderDash: [6, 4], pointRadius: 0, fill: false });
+    }
+    this.weightHistoryChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+  },
+
+  renderMoodEnergy(labels, mood, energy) {
+    const ctx = document.getElementById('moodEnergyChart');
+    if (!ctx) return;
+    this.clearMoodEnergy();
+    this.moodEnergyChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Stimmung', data: mood, borderColor: '#4F46E5', backgroundColor: 'rgba(79,70,229,0.1)', tension: 0.3, spanGaps: true, pointRadius: 3 },
+          { label: 'Energie', data: energy, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', tension: 0.3, spanGaps: true, pointRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } },
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+  },
+
+  renderCategory(labels, data, colors) {
+    const ctx = document.getElementById('categoryChart');
+    if (!ctx) return;
+    this.clearCategory();
+    this.categoryChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
   }
 };
 
@@ -551,6 +688,7 @@ const app = {
   selectedPriority: 2,
   selectedTags: [],
   completingTaskId: null,
+  editingTaskId: null,
   weightSettings: { startWeight: null, targetWeight: 89, startWaist: null, targetWaist: null },
 
   categories: {
@@ -569,6 +707,7 @@ const app = {
       schwimmen: { label: 'Schwimmen', hasTime: true },
       boxen: { label: 'Boxen', hasTime: true },
       fitnessboxen: { label: 'Fitness Boxen', hasTime: true },
+      fahrrad: { label: 'Fahrrad fahren', hasTime: true },
       pause: { label: 'Pause', hasTime: true }
     }},
     chinesisch: { icon: 'language', color: 'red', label: 'Chinesisch', subs: {
@@ -586,6 +725,9 @@ const app = {
 
   async init() {
     try {
+      if (navigator.storage && navigator.storage.persist) {
+        try { await navigator.storage.persist(); } catch (e) {}
+      }
       const savedStart = await db.getSettings('startWeight');
       const savedTarget = await db.getSettings('targetWeight');
       const savedStartWaist = await db.getSettings('startWaist');
@@ -608,6 +750,7 @@ const app = {
       this.renderTimeline();
       this.renderWeekGoals();
       this.updateDayCompleteButton();
+      this.renderWeekStats();
     } catch (e) {
       console.error('Init error:', e);
       alert('Fehler beim Starten: ' + e.message);
@@ -624,8 +767,104 @@ const app = {
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
     if (tab === 'dashboard') { this.renderWeekDayStrip(); this.renderTimeline(); }
+    if (tab === 'stats') this.renderStats();
     if (tab === 'week') this.renderWeekGoals();
     if (tab === 'tasks') { this.renderWeekChallenges(); this.renderTasks(); }
+    if (tab === 'body') { this.renderBody(); this.updateCharts(); }
+  },
+
+  async weekCategoryStats() {
+    const days = await db.getWeekDays(this.currentDay ? this.currentDay.weekId : db.getWeekId(this.currentDate));
+    const stats = {};
+    days.forEach(d => (d.tasks || []).forEach(t => {
+      if (!stats[t.category]) stats[t.category] = { completed: 0, total: 0 };
+      stats[t.category].total++;
+      if (t.completed) stats[t.category].completed++;
+    }));
+    return stats;
+  },
+
+  async renderSportStats() {
+    const el = document.getElementById('statSport');
+    if (!el) return;
+    const days = await db.getWeekDays(this.currentDay.weekId);
+    const subs = this.categories.sport.subs;
+    const totals = {};
+    days.forEach(d => (d.tasks || []).forEach(t => {
+      if (t.category === 'sport' && t.startTime && t.endTime) {
+        const mins = this.minutesBetween(t.startTime, t.endTime);
+        if (mins > 0) totals[t.subcategory] = (totals[t.subcategory] || 0) + mins;
+      }
+    }));
+    const iconFor = { krafttraining: 'fa-dumbbell', schwimmen: 'fa-person-swimming', boxen: 'fa-hand-fist', fitnessboxen: 'fa-hand-fist', fahrrad: 'fa-bicycle', pause: 'fa-mug-hot' };
+    let grand = 0;
+    let rows = '';
+    Object.keys(subs).forEach(key => {
+      const mins = totals[key] || 0;
+      if (mins <= 0) return;
+      if (key !== 'pause') grand += mins;
+      rows += '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><span class="text-sm text-gray-700"><i class="fas ' + (iconFor[key] || 'fa-circle') + ' text-orange-500 w-5 mr-1"></i>' + subs[key].label + '</span><span class="text-sm font-bold text-gray-900">' + this.fmtMin(mins) + '</span></div>';
+    });
+    if (!rows) {
+      el.innerHTML = '<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-xs text-gray-300">Diese Woche noch kein Sport mit Zeiten eingetragen.</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div class="bg-gradient-to-br from-orange-500 to-orange-400 rounded-2xl p-5 text-white shadow-lg mb-3">' +
+        '<p class="text-xs opacity-80 mb-1">Gesamter Sportaufwand</p>' +
+        '<p class="text-3xl font-bold">' + this.fmtMin(grand) + '</p>' +
+        '<p class="text-xs opacity-70 mt-1">ohne Pausen</p>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">' + rows + '</div>';
+  },
+
+  async renderStats() {
+    await this.renderSportStats();
+    await this.renderWeekStats();
+
+    const allDays = (await db.getAllDays()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Gewichtsverlauf (letzte 30 Einträge mit Gewicht)
+    const wDays = allDays.filter(d => typeof d.body?.weight === 'number').slice(-30);
+    const whEmpty = document.getElementById('weightHistoryEmpty');
+    if (wDays.length < 2) {
+      if (whEmpty) whEmpty.classList.remove('hidden');
+      Charts.clearWeightHistory();
+    } else {
+      if (whEmpty) whEmpty.classList.add('hidden');
+      Charts.renderWeightHistory(wDays.map(d => d.date.slice(5)), wDays.map(d => d.body.weight), this.weightSettings.targetWeight);
+    }
+
+    // Stimmung & Energie Verlauf (letzte 14 abgeschlossene Tage)
+    const all = allDays.filter(d => d.completed);
+    const recent = all.slice(-14);
+    const meEmpty = document.getElementById('moodEnergyEmpty');
+    if (recent.length < 2) {
+      if (meEmpty) meEmpty.classList.remove('hidden');
+      Charts.clearMoodEnergy();
+    } else {
+      if (meEmpty) meEmpty.classList.add('hidden');
+      const labels = recent.map(d => d.date.slice(5));
+      const mood = recent.map(d => d.reflection?.mood ?? null);
+      const energy = recent.map(d => d.reflection?.energy ?? null);
+      Charts.renderMoodEnergy(labels, mood, energy);
+    }
+
+    // Kategorien-Verteilung (Woche)
+    const stats = await this.weekCategoryStats();
+    const keys = Object.keys(stats);
+    const catEmpty = document.getElementById('categoryEmpty');
+    if (keys.length === 0) {
+      if (catEmpty) catEmpty.classList.remove('hidden');
+      Charts.clearCategory();
+    } else {
+      if (catEmpty) catEmpty.classList.add('hidden');
+      const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
+      const labels = keys.map(k => this.categories[k]?.label || k);
+      const data = keys.map(k => stats[k].total);
+      const colors = keys.map(k => colorMap[k] || '#94a3b8');
+      Charts.renderCategory(labels, data, colors);
+    }
   },
 
   async renderWeekChallenges() {
@@ -639,14 +878,75 @@ const app = {
       return;
     }
 
+    const stats = await this.weekCategoryStats();
     const colors = [['from-blue-600', 'to-blue-400', 'shadow-blue-200'], ['from-purple-500', 'to-purple-400', 'shadow-purple-200'], ['from-orange-500', 'to-orange-400', 'shadow-orange-200'], ['from-emerald-500', 'to-emerald-400', 'shadow-emerald-200']];
     goals.forEach((goal, i) => {
       const c = colors[i % colors.length];
+      const s = stats[goal.category] || { completed: 0, total: 0 };
+      const pct = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
       const el = document.createElement('div');
       el.className = 'challenge-card bg-gradient-to-br ' + c[0] + ' ' + c[1] + ' rounded-2xl p-5 text-white shadow-lg ' + c[2];
-      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + (Math.random() * 40 + 10) + '%"></div></div><p class="text-xs opacity-70">In Bearbeitung</p>';
+      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + pct + '%"></div></div><p class="text-xs opacity-70">' + s.completed + '/' + s.total + ' Aufgaben erledigt · ' + pct + '%</p>';
       container.appendChild(el);
     });
+  },
+
+  minutesBetween(a, b) {
+    if (!a || !b) return 0;
+    const [h1, m1] = a.split(':').map(Number);
+    const [h2, m2] = b.split(':').map(Number);
+    let d = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (d < 0) d += 24 * 60;
+    return d;
+  },
+
+  fmtMin(m) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return h > 0 ? (h + 'h ' + mm + 'min') : (mm + 'min');
+  },
+
+  commuteHtml(task) {
+    if (!(task.category === 'arbeit' && task.subcategory === 'office')) return '';
+    const isBike = task.detail === 'fahrrad';
+    const modeLabel = isBike ? 'Fahrrad' : (task.detail === 'oepnv' ? 'ÖPNV' : '');
+    if (!modeLabel) return '';
+    const icon = isBike ? 'fa-bicycle' : 'fa-bus';
+    let str = '<i class="fas ' + icon + ' mr-1"></i>' + modeLabel;
+    if (task.commuteStart && task.commuteEnd) {
+      const mins = this.minutesBetween(task.commuteStart, task.commuteEnd);
+      str += ' · ' + task.commuteStart + '–' + task.commuteEnd + ' (' + this.fmtMin(mins) + ')';
+    }
+    return '<p class="text-xs text-gray-400 mt-1">' + str + '</p>';
+  },
+
+  async renderWeekStats() {
+    const el = document.getElementById('weekStats');
+    if (!el) return;
+    const days = await db.getWeekDays(this.currentDay.weekId);
+    let bikeMin = 0, bikeRides = 0, transitMin = 0, transitRides = 0;
+    days.forEach(d => (d.tasks || []).forEach(t => {
+      if (t.category === 'arbeit' && t.subcategory === 'office' && t.commuteStart && t.commuteEnd) {
+        const mins = this.minutesBetween(t.commuteStart, t.commuteEnd);
+        if (mins > 0) {
+          if (t.detail === 'fahrrad') { bikeMin += mins; bikeRides++; }
+          else if (t.detail === 'oepnv') { transitMin += mins; transitRides++; }
+        }
+      }
+    }));
+    el.innerHTML =
+      '<div class="grid grid-cols-2 gap-3">' +
+        '<div class="bg-gradient-to-br from-orange-500 to-orange-400 rounded-2xl p-4 text-white shadow-lg">' +
+          '<div class="flex items-center justify-between mb-2"><i class="fas fa-bicycle text-lg"></i><span class="text-xs opacity-80">' + bikeRides + ' Fahrten</span></div>' +
+          '<p class="text-2xl font-bold leading-tight">' + this.fmtMin(bikeMin) + '</p>' +
+          '<p class="text-xs opacity-80 mt-1">Fahrrad diese Woche</p>' +
+        '</div>' +
+        '<div class="bg-gradient-to-br from-blue-500 to-blue-400 rounded-2xl p-4 text-white shadow-lg">' +
+          '<div class="flex items-center justify-between mb-2"><i class="fas fa-bus text-lg"></i><span class="text-xs opacity-80">' + transitRides + ' Fahrten</span></div>' +
+          '<p class="text-2xl font-bold leading-tight">' + this.fmtMin(transitMin) + '</p>' +
+          '<p class="text-xs opacity-80 mt-1">ÖPNV diese Woche</p>' +
+        '</div>' +
+      '</div>';
   },
 
   renderTasks() {
@@ -663,11 +963,15 @@ const app = {
       const el = document.createElement('div');
       el.className = 'task-item bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'completed' : '');
       const timeStr = task.startTime && task.endTime ? task.startTime + '-' + task.endTime : (task.startTime || '');
-      const detailStr = task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '';
+      const isOffice = task.category === 'arbeit' && task.subcategory === 'office';
+      const detailStr = (task.detail && !isOffice) ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '';
+      const commuteStr = this.commuteHtml(task);
       const achievementStr = task.achievement ? '<p class="text-xs text-emerald-500 mt-1 font-medium"><i class="fas fa-check mr-1"></i>' + task.achievement + '</p>' : '';
       const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
-      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
+      el.style.cursor = 'pointer';
+      el.onclick = () => this.editTask(task.id);
+      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + commuteStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
       list.appendChild(el);
     });
   },
@@ -723,12 +1027,18 @@ const app = {
       const timeLabel = task.startTime || '––:––';
       const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
-      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + (task.detail ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '') + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="app.openCompleteModal(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
+      const isOfficeTl = task.category === 'arbeit' && task.subcategory === 'office';
+      const detailTl = (task.detail && !isOfficeTl) ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '';
+      const commuteTl = this.commuteHtml(task);
+      el.style.cursor = 'pointer';
+      el.onclick = () => this.editTask(task.id);
+      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + detailTl + commuteTl + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
       container.appendChild(el);
     });
   },
 
-  openTaskModal() {
+  openTaskModal(task) {
+    this.editingTaskId = task ? task.id : null;
     this.selectedCategory = null;
     this.selectedSubcategory = null;
     this.selectedPriority = 2;
@@ -740,7 +1050,51 @@ const app = {
     document.getElementById('detailSection').classList.add('hidden');
     document.getElementById('taskStart').value = '';
     document.getElementById('taskEnd').value = '';
+
+    const titleEl = document.getElementById('taskModalTitle');
+    const saveBtn = document.getElementById('taskSaveBtn');
+    if (task) {
+      if (titleEl) titleEl.textContent = 'Aufgabe bearbeiten';
+      if (saveBtn) saveBtn.textContent = 'Änderungen speichern';
+      this.selectCategory(task.category);
+      this.selectSubByKey(task.subcategory);
+      const cat = this.categories[task.category];
+      const sub = cat && cat.subs[task.subcategory];
+      if (sub && sub.detailType === 'subsub') {
+        const b = document.querySelector('.detail-sub-btn[data-value="' + task.detail + '"]');
+        if (b) b.classList.add('selected');
+        const cs = document.getElementById('commuteStart');
+        const ce = document.getElementById('commuteEnd');
+        if (cs) cs.value = task.commuteStart || '';
+        if (ce) ce.value = task.commuteEnd || '';
+      } else if (sub && sub.detailType === 'hsk') {
+        const parts = (task.detail || '').split(' | ');
+        const dt = document.getElementById('detailTopic');
+        const ds = document.getElementById('detailSubtopics');
+        if (dt) dt.value = parts[0] || '';
+        if (ds) ds.value = parts[1] || '';
+      } else {
+        const d = document.getElementById('detailText');
+        if (d) d.value = task.detail || '';
+      }
+      document.getElementById('taskStart').value = task.startTime || '';
+      document.getElementById('taskEnd').value = task.endTime || '';
+      this.selectPriority(task.priority || 2);
+    } else {
+      if (titleEl) titleEl.textContent = 'Neue Aufgabe';
+      if (saveBtn) saveBtn.textContent = 'Aufgabe erstellen';
+    }
     document.getElementById('taskModal').classList.remove('hidden');
+  },
+
+  editTask(taskId) {
+    const task = this.currentDay.tasks.find(t => t.id === taskId);
+    if (task) this.openTaskModal(task);
+  },
+
+  selectSubByKey(key) {
+    const btn = document.querySelector('.sub-btn[data-key="' + key + '"]');
+    this.selectSubcategory(key, btn ? { target: btn } : null);
   },
 
   closeTaskModal() {
@@ -764,6 +1118,7 @@ const app = {
       btn.type = 'button';
       btn.className = 'sub-btn p-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-medium text-gray-700';
       btn.textContent = sub.label;
+      btn.dataset.key = key;
       btn.onclick = (e) => this.selectSubcategory(key, e);
       grid.appendChild(btn);
     });
@@ -787,7 +1142,7 @@ const app = {
     container.innerHTML = '';
 
     if (sub.detailType === 'subsub' && sub.children) {
-      label.textContent = 'Verkehrsmittel';
+      label.textContent = 'Wie zur Arbeit gekommen?';
       const grid = document.createElement('div');
       grid.className = 'grid grid-cols-2 gap-2';
       Object.entries(sub.children).forEach(([k, child]) => {
@@ -795,14 +1150,18 @@ const app = {
         btn.type = 'button';
         btn.className = 'detail-sub-btn p-2.5 rounded-lg bg-gray-50 border-2 border-gray-100 text-xs font-medium text-gray-700 hover:border-blue-400 transition';
         btn.textContent = child.label;
+        btn.dataset.value = k;
         btn.onclick = () => {
           document.querySelectorAll('.detail-sub-btn').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
-          btn.dataset.value = k;
         };
         grid.appendChild(btn);
       });
       container.appendChild(grid);
+      const timeWrap = document.createElement('div');
+      timeWrap.className = 'grid grid-cols-2 gap-2 mt-3';
+      timeWrap.innerHTML = '<div><label class="block text-[11px] text-gray-400 mb-1 font-medium">Losgefahren</label><input type="time" id="commuteStart" class="w-full bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500 transition"></div><div><label class="block text-[11px] text-gray-400 mb-1 font-medium">Angekommen</label><input type="time" id="commuteEnd" class="w-full bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>';
+      container.appendChild(timeWrap);
       section.classList.remove('hidden');
       return;
     }
@@ -858,9 +1217,13 @@ const app = {
     const cat = this.categories[this.selectedCategory];
     const sub = cat.subs[this.selectedSubcategory];
     let detail = '';
+    let commuteStart = '';
+    let commuteEnd = '';
     if (sub.detailType === 'subsub') {
       const selected = document.querySelector('.detail-sub-btn.selected');
       detail = selected ? selected.dataset.value : '';
+      commuteStart = document.getElementById('commuteStart')?.value || '';
+      commuteEnd = document.getElementById('commuteEnd')?.value || '';
     } else if (sub.detailType === 'hsk') {
       const topic = document.getElementById('detailTopic')?.value || '';
       const subtopics = document.getElementById('detailSubtopics')?.value || '';
@@ -869,25 +1232,42 @@ const app = {
       detail = document.getElementById('detailText')?.value || '';
     }
 
-    const task = {
-      id: db.uuid(),
-      category: this.selectedCategory,
-      subcategory: this.selectedSubcategory,
-      detail: detail,
-      startTime: document.getElementById('taskStart').value,
-      endTime: document.getElementById('taskEnd').value,
-      priority: this.selectedPriority,
-      completed: false,
-      achievement: ''
-    };
+    if (this.editingTaskId) {
+      const t = this.currentDay.tasks.find(x => x.id === this.editingTaskId);
+      if (t) {
+        t.category = this.selectedCategory;
+        t.subcategory = this.selectedSubcategory;
+        t.detail = detail;
+        t.startTime = document.getElementById('taskStart').value;
+        t.endTime = document.getElementById('taskEnd').value;
+        t.priority = this.selectedPriority;
+        t.commuteStart = commuteStart;
+        t.commuteEnd = commuteEnd;
+      }
+      this.editingTaskId = null;
+    } else {
+      this.currentDay.tasks.push({
+        id: db.uuid(),
+        category: this.selectedCategory,
+        subcategory: this.selectedSubcategory,
+        detail: detail,
+        startTime: document.getElementById('taskStart').value,
+        endTime: document.getElementById('taskEnd').value,
+        priority: this.selectedPriority,
+        commuteStart: commuteStart,
+        commuteEnd: commuteEnd,
+        completed: false,
+        achievement: ''
+      });
+    }
 
-    this.currentDay.tasks.push(task);
     await db.saveDay(this.currentDay);
     this.closeTaskModal();
     this.renderTasks();
     this.renderTimeline();
     this.updateCharts();
     this.updateDayCompleteButton();
+    this.renderWeekStats();
   },
 
   openCompleteModal(taskId) {
@@ -1038,6 +1418,34 @@ const app = {
     alert('Body-Daten gespeichert!');
   },
 
+  async addIntake() {
+    const inp = document.getElementById('intakeInput');
+    const name = (inp.value || '').trim();
+    if (!name) return;
+    if (!Array.isArray(this.currentDay.body.intake)) this.currentDay.body.intake = [];
+    this.currentDay.body.intake.push({ id: db.uuid(), name });
+    inp.value = '';
+    await db.saveDay(this.currentDay);
+    this.renderIntake();
+  },
+
+  async removeIntake(id) {
+    this.currentDay.body.intake = (this.currentDay.body.intake || []).filter(x => x.id !== id);
+    await db.saveDay(this.currentDay);
+    this.renderIntake();
+  },
+
+  renderIntake() {
+    const el = document.getElementById('intakeList');
+    if (!el) return;
+    const items = this.currentDay.body.intake || [];
+    if (items.length === 0) {
+      el.innerHTML = '<p class="text-xs text-gray-300">Noch nichts eingetragen</p>';
+      return;
+    }
+    el.innerHTML = items.map(it => '<div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5"><span class="text-sm text-gray-800"><i class="fas fa-pills text-emerald-500 mr-2"></i>' + it.name + '</span><button onclick="app.removeIntake(\'' + it.id + '\')" class="text-gray-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button></div>').join('');
+  },
+
   renderBody() {
     const body = this.currentDay.body;
     document.getElementById('currentWeightDisplay').textContent = body.weight || '--';
@@ -1049,6 +1457,54 @@ const app = {
     document.getElementById('mealDinner').value = body.meals?.dinner || '';
     document.getElementById('mealSnack').value = body.meals?.snack || '';
     document.getElementById('proteinInput').value = body.protein || '';
+    this.renderIntake();
+    this.renderTrends();
+  },
+
+  async renderTrends() {
+    const all = (await db.getAllDays()).sort((a, b) => a.date.localeCompare(b.date));
+    this.renderMetricArrow(all, 'weight', 'kg', 'weightDelta', 'weightTrack', this.weightSettings.startWeight, this.weightSettings.targetWeight);
+    this.renderMetricArrow(all, 'waist', 'cm', 'waistDelta', 'waistTrack', this.weightSettings.startWaist, this.weightSettings.targetWaist);
+  },
+
+  renderMetricArrow(all, key, unit, deltaElId, trackElId, startVal, targetVal) {
+    const el = document.getElementById(deltaElId);
+    const trackEl = document.getElementById(trackElId);
+    if (!el) return;
+    const withVal = all.filter(d => typeof d.body?.[key] === 'number');
+    const current = this.currentDay.body && typeof this.currentDay.body[key] === 'number' ? this.currentDay.body[key] : null;
+    let prev = null;
+    for (let i = withVal.length - 1; i >= 0; i--) {
+      if (withVal[i].date < this.currentDate) { prev = withVal[i].body[key]; break; }
+    }
+    if (current === null) {
+      el.innerHTML = '';
+      if (trackEl) trackEl.innerHTML = '';
+      return;
+    }
+    if (prev === null) {
+      el.innerHTML = '<span class="text-xs text-gray-400">Erster Eintrag</span>';
+    } else {
+      const delta = current - prev;
+      const down = delta < -0.001, up = delta > 0.001;
+      const color = down ? 'text-emerald-500' : (up ? 'text-red-500' : 'text-gray-400');
+      const icon = down ? 'fa-arrow-down' : (up ? 'fa-arrow-up' : 'fa-arrows-left-right');
+      el.innerHTML = '<span class="' + color + ' text-sm font-bold"><i class="fas ' + icon + ' mr-1"></i>' + Math.abs(delta).toFixed(1) + ' ' + unit + '</span> <span class="text-xs text-gray-400">seit letzter Messung</span>';
+    }
+    if (!trackEl) return;
+    if (typeof startVal === 'number' && typeof targetVal === 'number' && startVal > targetVal) {
+      const lost = startVal - current;
+      if (current <= targetVal) {
+        trackEl.innerHTML = '<span class="inline-block text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full"><i class="fas fa-flag-checkered mr-1"></i>Ziel erreicht!</span>';
+      } else if (current < startVal) {
+        const pct = Math.round((lost / (startVal - targetVal)) * 100);
+        trackEl.innerHTML = '<span class="inline-block text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full"><i class="fas fa-arrow-trend-down mr-1"></i>On Track · ' + lost.toFixed(1) + ' ' + unit + ' runter (' + pct + '% zum Ziel)</span>';
+      } else {
+        trackEl.innerHTML = '<span class="inline-block text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full"><i class="fas fa-triangle-exclamation mr-1"></i>Über Startwert</span>';
+      }
+    } else {
+      trackEl.innerHTML = '';
+    }
   },
 
   openWeightSettings() {
@@ -1130,6 +1586,41 @@ const app = {
     a.download = 'acrybia-export-' + this.currentDate + '.json';
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  async importData(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!confirm('Backup importieren? Vorhandene Tage mit gleichem Datum werden überschrieben.')) {
+      event.target.value = '';
+      return;
+    }
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await db.importAll(data);
+      await this.loadDay();
+      const savedStart = await db.getSettings('startWeight');
+      const savedTarget = await db.getSettings('targetWeight');
+      const savedStartWaist = await db.getSettings('startWaist');
+      const savedTargetWaist = await db.getSettings('targetWaist');
+      if (savedStart !== undefined) this.weightSettings.startWeight = savedStart;
+      if (savedTarget !== undefined) this.weightSettings.targetWeight = savedTarget;
+      if (savedStartWaist !== undefined) this.weightSettings.startWaist = savedStartWaist;
+      if (savedTargetWaist !== undefined) this.weightSettings.targetWaist = savedTargetWaist;
+      this.renderTasks();
+      this.renderBody();
+      this.renderTimeline();
+      this.renderWeekGoals();
+      this.renderWeekChallenges();
+      this.updateCharts();
+      this.updateDayCompleteButton();
+      this.renderWeekStats();
+      alert('Backup erfolgreich importiert!');
+    } catch (e) {
+      alert('Import fehlgeschlagen: ' + e.message);
+    }
+    event.target.value = '';
   }
 };
 
