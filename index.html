@@ -682,6 +682,7 @@ const Charts = {
 // ============ APP ============
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
+  appToday: new Date().toISOString().split('T')[0],
   currentDay: null,
   selectedCategory: null,
   selectedSubcategory: null,
@@ -700,7 +701,7 @@ const app = {
       }}
     }},
     acrybia: { icon: 'rocket', color: 'purple', label: 'Acrybia', subs: {
-      blank: { label: 'Blank (Selbst eingeben)', hasTime: true, detailType: 'text' }
+      blank: { label: 'Eigenes Thema', hasTime: true, detailType: 'text' }
     }},
     sport: { icon: 'dumbbell', color: 'orange', label: 'Sport', subs: {
       krafttraining: { label: 'Krafttraining', hasTime: true },
@@ -719,7 +720,7 @@ const app = {
       hsk6: { label: 'HSK 6', hasTime: true, detailType: 'hsk' }
     }},
     custom: { icon: 'plus-circle', color: 'emerald', label: 'Weiteres', subs: {
-      blank: { label: 'Blank (Selbst eingeben)', hasTime: true, detailType: 'text' }
+      blank: { label: 'Anderes Thema', hasTime: true, detailType: 'text' }
     }}
   },
 
@@ -751,6 +752,9 @@ const app = {
       this.renderWeekGoals();
       this.updateDayCompleteButton();
       this.renderWeekStats();
+
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) this.checkDateRollover(); });
+      window.addEventListener('focus', () => this.checkDateRollover());
     } catch (e) {
       console.error('Init error:', e);
       alert('Fehler beim Starten: ' + e.message);
@@ -759,6 +763,28 @@ const app = {
 
   async loadDay() {
     this.currentDay = await db.getDay(this.currentDate);
+  },
+
+  checkDateRollover() {
+    const realToday = new Date().toISOString().split('T')[0];
+    if (realToday === this.appToday) return;
+    const wasOnToday = this.currentDate === this.appToday;
+    this.appToday = realToday;
+    if (wasOnToday) {
+      this.currentDate = realToday;
+      this.loadDay().then(() => {
+        this.renderTasks();
+        this.renderBody();
+        this.renderTimeline();
+        this.renderWeekDayStrip();
+        this.updateCharts();
+        this.updateDayCompleteButton();
+        this.renderWeekChallenges();
+        this.renderWeekStats();
+      });
+    } else {
+      this.renderWeekDayStrip();
+    }
   },
 
   switchTab(tab) {
@@ -966,12 +992,13 @@ const app = {
       const isOffice = task.category === 'arbeit' && task.subcategory === 'office';
       const detailStr = (task.detail && !isOffice) ? '<p class="text-xs text-gray-400 mt-1">' + task.detail + '</p>' : '';
       const commuteStr = this.commuteHtml(task);
+      const startDateStr = task.startDate ? '<p class="text-xs text-gray-400 mt-1"><i class="fas fa-calendar-day mr-1"></i>Start: ' + task.startDate.split('-').reverse().join('.') + '</p>' : '';
       const achievementStr = task.achievement ? '<p class="text-xs text-emerald-500 mt-1 font-medium"><i class="fas fa-check mr-1"></i>' + task.achievement + '</p>' : '';
       const badgeClass = task.priority === 1 ? 'badge-high' : (task.priority === 2 ? 'badge-medium' : 'badge-low');
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
       el.style.cursor = 'pointer';
       el.onclick = () => this.editTask(task.id);
-      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + commuteStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
+      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + commuteStr + startDateStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
       list.appendChild(el);
     });
   },
@@ -1076,6 +1103,8 @@ const app = {
       } else {
         const d = document.getElementById('detailText');
         if (d) d.value = task.detail || '';
+        const sd = document.getElementById('detailStartDate');
+        if (sd) sd.value = task.startDate || this.currentDate;
       }
       document.getElementById('taskStart').value = task.startTime || '';
       document.getElementById('taskEnd').value = task.endTime || '';
@@ -1189,13 +1218,23 @@ const app = {
     }
 
     if (sub.detailType === 'text' || sub.detailType === 'blank') {
-      label.textContent = 'Beschreibung';
+      label.textContent = 'Was genau?';
       const input = document.createElement('input');
       input.type = 'text';
-      input.placeholder = 'Was genau?...';
+      input.placeholder = 'Thema / Beschreibung...';
       input.className = 'w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition';
       input.id = 'detailText';
       container.appendChild(input);
+      const dateLabel = document.createElement('label');
+      dateLabel.className = 'block text-xs text-gray-400 mb-1 mt-3 font-medium';
+      dateLabel.textContent = 'Startdatum (optional)';
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.id = 'detailStartDate';
+      dateInput.value = this.currentDate;
+      dateInput.className = 'w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500 transition';
+      container.appendChild(dateLabel);
+      container.appendChild(dateInput);
       section.classList.remove('hidden');
       return;
     }
@@ -1219,6 +1258,7 @@ const app = {
     let detail = '';
     let commuteStart = '';
     let commuteEnd = '';
+    let startDate = '';
     if (sub.detailType === 'subsub') {
       const selected = document.querySelector('.detail-sub-btn.selected');
       detail = selected ? selected.dataset.value : '';
@@ -1230,6 +1270,7 @@ const app = {
       detail = topic + (subtopics ? ' | ' + subtopics : '');
     } else {
       detail = document.getElementById('detailText')?.value || '';
+      startDate = document.getElementById('detailStartDate')?.value || '';
     }
 
     if (this.editingTaskId) {
@@ -1243,6 +1284,7 @@ const app = {
         t.priority = this.selectedPriority;
         t.commuteStart = commuteStart;
         t.commuteEnd = commuteEnd;
+        t.startDate = startDate;
       }
       this.editingTaskId = null;
     } else {
@@ -1256,6 +1298,7 @@ const app = {
         priority: this.selectedPriority,
         commuteStart: commuteStart,
         commuteEnd: commuteEnd,
+        startDate: startDate,
         completed: false,
         achievement: ''
       });
