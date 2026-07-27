@@ -17,6 +17,9 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+    html { scroll-behavior: smooth; }
+    body { -webkit-overflow-scrolling: touch; }
+    .overflow-y-auto { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -61,7 +64,7 @@
 <body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-x-hidden pb-24">
 
   <!-- Header -->
-  <header class="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
+  <header class="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100">
     <div class="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md">A</div>
@@ -223,7 +226,7 @@
   </button>
 
   <!-- Bottom Navigation -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 pb-safe">
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 pb-safe">
     <div class="max-w-lg mx-auto flex justify-around items-center py-2 px-4">
       <button onclick="app.switchTab('tasks')" class="nav-btn active flex flex-col items-center p-2 rounded-xl transition min-w-[52px]" data-tab="tasks">
         <i class="fas fa-home text-lg mb-0.5"></i><span class="text-[10px] font-medium">Home</span>
@@ -246,11 +249,14 @@
 
   <!-- Task Modal -->
   <div id="taskModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeTaskModal()"></div>
+    <div class="absolute inset-0 bg-black/50" onclick="app.closeTaskModal()"></div>
     <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl border-t border-gray-100 max-h-[92vh] overflow-y-auto">
       <div class="p-6 max-w-lg mx-auto">
-        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
-        <h2 id="taskModalTitle" class="text-xl font-bold text-gray-900 mb-6">Neue Aufgabe</h2>
+        <button onclick="app.closeTaskModal()" class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 block" aria-label="Schließen"></button>
+        <div class="flex items-center justify-between mb-6">
+          <h2 id="taskModalTitle" class="text-xl font-bold text-gray-900">Neue Aufgabe</h2>
+          <button onclick="app.closeTaskModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition" aria-label="Schließen"><i class="fas fa-xmark"></i></button>
+        </div>
         <div class="mb-4">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategorie</label>
           <div class="grid grid-cols-2 gap-2.5" id="categoryGrid">
@@ -298,10 +304,13 @@
 
   <!-- Complete Task Modal -->
   <div id="completeTaskModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeCompleteTaskModal()"></div>
+    <div class="absolute inset-0 bg-black/50" onclick="app.closeCompleteTaskModal()"></div>
     <div class="absolute inset-x-4 top-24 bg-white rounded-2xl border border-gray-100 max-w-lg mx-auto shadow-2xl">
       <div class="p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-2">Aufgabe abschließen</h2>
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-xl font-bold text-gray-900">Aufgabe abschließen</h2>
+          <button onclick="app.closeCompleteTaskModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition -mt-1" aria-label="Schließen"><i class="fas fa-xmark"></i></button>
+        </div>
         <p class="text-sm text-gray-400 mb-4">Was hast du erreicht?</p>
         <textarea id="taskAchievement" rows="3" placeholder="Beschreibe dein Ergebnis..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition mb-4"></textarea>
         <button onclick="app.completeTask()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white active:scale-95 transition font-bold shadow-lg shadow-emerald-200"><i class="fas fa-check mr-2"></i>Abschließen</button>
@@ -311,9 +320,10 @@
 
   <!-- Day Complete Modal -->
   <div id="dayCompleteModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 bg-black/60" onclick="app.closeDayComplete()"></div>
     <div class="absolute inset-x-3 top-8 bottom-8 bg-white rounded-3xl border border-gray-100 max-w-lg mx-auto overflow-y-auto shadow-2xl">
       <div class="p-6">
+        <button onclick="app.closeDayComplete()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition z-10" aria-label="Schließen"><i class="fas fa-xmark"></i></button>
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-trophy text-2xl text-emerald-500"></i></div>
           <h2 class="text-2xl font-bold text-gray-900">Tagesabschluss!</h2>
@@ -379,7 +389,7 @@
 
   <!-- Weight Settings Modal -->
   <div id="weightSettingsModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="app.closeWeightSettings()"></div>
+    <div class="absolute inset-0 bg-black/50" onclick="app.closeWeightSettings()"></div>
     <div class="absolute inset-x-4 top-24 bg-white rounded-2xl border border-gray-100 max-w-lg mx-auto shadow-2xl max-h-[70vh] overflow-y-auto">
       <div class="p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Body-Einstellungen</h2>
@@ -1127,6 +1137,7 @@ const app = {
   },
 
   closeTaskModal() {
+    this.editingTaskId = null;
     document.getElementById('taskModal').classList.add('hidden');
   },
 
@@ -1381,6 +1392,10 @@ const app = {
     document.getElementById('fearFields').classList.add('hidden');
     document.getElementById('fearWhy').value = '';
     document.getElementById('dayCompleteModal').classList.remove('hidden');
+  },
+
+  closeDayComplete() {
+    document.getElementById('dayCompleteModal').classList.add('hidden');
   },
 
   toggleShame() {
