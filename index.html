@@ -369,12 +369,12 @@
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tags</label>
             <div class="flex flex-wrap gap-2" id="refTags">
-              <button type="button" onclick="app.toggleTag(this, 'müdigkeit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Müdigkeit</button>
-              <button type="button" onclick="app.toggleTag(this, 'zeitdruck')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Zeitdruck</button>
-              <button type="button" onclick="app.toggleTag(this, 'ablenkung')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Ablenkung</button>
-              <button type="button" onclick="app.toggleTag(this, 'technik')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Technik</button>
-              <button type="button" onclick="app.toggleTag(this, 'gesundheit')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Gesundheit</button>
-              <button type="button" onclick="app.toggleTag(this, 'motivation')" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Motivation</button>
+              <button type="button" onclick="app.toggleTag(this, 'müdigkeit')" data-tag="müdigkeit" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Müdigkeit</button>
+              <button type="button" onclick="app.toggleTag(this, 'zeitdruck')" data-tag="zeitdruck" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Zeitdruck</button>
+              <button type="button" onclick="app.toggleTag(this, 'ablenkung')" data-tag="ablenkung" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Ablenkung</button>
+              <button type="button" onclick="app.toggleTag(this, 'technik')" data-tag="technik" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Technik</button>
+              <button type="button" onclick="app.toggleTag(this, 'gesundheit')" data-tag="gesundheit" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Gesundheit</button>
+              <button type="button" onclick="app.toggleTag(this, 'motivation')" data-tag="motivation" class="tag-btn px-3 py-1.5 rounded-full bg-gray-50 border-2 border-gray-100 text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition font-medium">Motivation</button>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -541,6 +541,16 @@ class AcrybiaDB {
     return new Promise((resolve) => {
       const tx = this.db.transaction('days', 'readonly');
       const req = tx.objectStore('days').getAll();
+      req.onsuccess = () => resolve((req.result || []).map(d => this.hydrateDay(d)));
+    });
+  }
+
+  async getWeekDays(weekId) {
+    await this.init();
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('days', 'readonly');
+      const idx = tx.objectStore('days').index('week');
+      const req = idx.getAll(weekId);
       req.onsuccess = () => resolve((req.result || []).map(d => this.hydrateDay(d)));
     });
   }
@@ -1374,23 +1384,28 @@ const app = {
     } else {
       warning.classList.add('hidden');
     }
-    this.selectedTags = [];
-    document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('selected'));
-    document.getElementById('refProblemCat').value = 'arbeit';
-    document.getElementById('refProblemText').value = '';
-    document.getElementById('refBlocker').value = '';
-    document.getElementById('refBlockerWhy').value = '';
-    document.getElementById('refMood').value = 3;
-    document.getElementById('moodVal').textContent = '3';
-    document.getElementById('refEnergy').value = 3;
-    document.getElementById('energyVal').textContent = '3';
-    document.getElementById('shameToggle').checked = false;
-    document.getElementById('shameFields').classList.add('hidden');
-    document.getElementById('shameWhen').value = '';
-    document.getElementById('shameWhy').value = '';
-    document.getElementById('fearToggle').checked = false;
-    document.getElementById('fearFields').classList.add('hidden');
-    document.getElementById('fearWhy').value = '';
+    const r = this.currentDay.reflection || {};
+    this.selectedTags = Array.isArray(r.tags) ? [...r.tags] : [];
+    document.querySelectorAll('.tag-btn').forEach(b => b.classList.toggle('selected', this.selectedTags.includes(b.dataset.tag)));
+    document.getElementById('refProblemCat').value = r.biggestProblem?.category || 'arbeit';
+    document.getElementById('refProblemText').value = r.biggestProblem?.text || '';
+    document.getElementById('refBlocker').value = r.blocker || '';
+    document.getElementById('refBlockerWhy').value = r.blockerWhy || '';
+    const mood = r.mood || 3;
+    document.getElementById('refMood').value = mood;
+    document.getElementById('moodVal').textContent = String(mood);
+    const energy = r.energy || 3;
+    document.getElementById('refEnergy').value = energy;
+    document.getElementById('energyVal').textContent = String(energy);
+    const shame = r.shame || {};
+    document.getElementById('shameToggle').checked = !!shame.experienced;
+    document.getElementById('shameFields').classList.toggle('hidden', !shame.experienced);
+    document.getElementById('shameWhen').value = shame.when || '';
+    document.getElementById('shameWhy').value = shame.why || '';
+    const fear = r.fear || {};
+    document.getElementById('fearToggle').checked = !!fear.experienced;
+    document.getElementById('fearFields').classList.toggle('hidden', !fear.experienced);
+    document.getElementById('fearWhy').value = fear.why || '';
     document.getElementById('dayCompleteModal').classList.remove('hidden');
   },
 
@@ -1433,9 +1448,10 @@ const app = {
     };
     await db.saveDay(this.currentDay);
     document.getElementById('dayCompleteModal').classList.add('hidden');
+    alert('Tag abgeschlossen und gespeichert! Gut gemacht!');
     this.updateCharts();
     this.updateDayCompleteButton();
-    alert('Tag abgeschlossen! Gut gemacht!');
+    this.renderTasks();
   },
 
   async saveWeight() {
