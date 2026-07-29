@@ -154,9 +154,9 @@
         <div style="height:180px"><canvas id="moodEnergyChart"></canvas></div>
       </div>
 
-      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Aufgaben nach Kategorie (Woche)</h3>
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Zeitverteilung nach Kategorie (Woche)</h3>
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
-        <div id="categoryEmpty" class="text-xs text-gray-300 hidden">Diese Woche noch keine Aufgaben.</div>
+        <div id="categoryEmpty" class="text-xs text-gray-300 hidden">Diese Woche noch keine Aufgaben mit Start- und Ende-Zeit.</div>
         <div style="height:220px"><canvas id="categoryChart"></canvas></div>
       </div>
     </div>
@@ -748,7 +748,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '13';
+const APP_VERSION = '15';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -1023,18 +1023,26 @@ const app = {
       Charts.renderMoodEnergy(labels, mood, energy);
     }
 
-    // Kategorien-Verteilung (Woche)
-    const stats = await this.weekCategoryStats();
-    const keys = Object.keys(stats);
+    // Zeitverteilung nach Kategorie (Woche) — nach echter Zeit, nicht Anzahl
+    const catDays = await db.getWeekDays(this.currentDay.weekId);
+    const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
+    const timeByCat = {};
+    catDays.forEach(d => (d.tasks || []).forEach(t => {
+      if (t.startTime && t.endTime) {
+        const mins = this.minutesBetween(t.startTime, t.endTime);
+        if (mins > 0) timeByCat[t.category] = (timeByCat[t.category] || 0) + mins;
+      }
+    }));
+    const order = ['arbeit', 'acrybia', 'sport', 'chinesisch', 'custom'];
+    const keys = order.filter(k => (timeByCat[k] || 0) > 0);
     const catEmpty = document.getElementById('categoryEmpty');
     if (keys.length === 0) {
       if (catEmpty) catEmpty.classList.remove('hidden');
       Charts.clearCategory();
     } else {
       if (catEmpty) catEmpty.classList.add('hidden');
-      const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
-      const labels = keys.map(k => this.categories[k]?.label || k);
-      const data = keys.map(k => stats[k].total);
+      const labels = keys.map(k => (this.categories[k]?.label || k) + ' · ' + this.fmtMin(timeByCat[k]));
+      const data = keys.map(k => timeByCat[k]);
       const colors = keys.map(k => colorMap[k] || '#94a3b8');
       Charts.renderCategory(labels, data, colors);
     }
@@ -1766,11 +1774,28 @@ const app = {
       return;
     }
     goals.forEach(goal => {
+      const done = !!goal.done;
       const el = document.createElement('div');
-      el.className = 'flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm';
-      el.innerHTML = '<div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full dot-' + goal.category + '"></div><div><p class="text-sm font-semibold text-gray-900">' + goal.text + '</p><p class="text-xs text-gray-400">' + (this.categories[goal.category]?.label || goal.category) + '</p></div></div><button onclick="app.deleteWeekGoalItem(' + goal.id + ')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center transition text-gray-400 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>';
+      el.className = 'flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm' + (done ? ' opacity-70' : '');
+      el.innerHTML =
+        '<div class="flex items-center gap-3 flex-1 min-w-0">' +
+          '<button onclick="app.toggleWeekGoal(' + goal.id + ')" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border transition ' + (done ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-gray-50 border-gray-200 text-gray-300 hover:border-emerald-300 hover:text-emerald-400') + '"><i class="fas fa-check text-xs"></i></button>' +
+          '<div class="min-w-0"><p class="text-sm font-semibold ' + (done ? 'text-gray-400 line-through' : 'text-gray-900') + '">' + goal.text + '</p><p class="text-xs text-gray-400"><span class="inline-block w-2 h-2 rounded-full dot-' + goal.category + ' mr-1 align-middle"></span>' + (this.categories[goal.category]?.label || goal.category) + '</p></div>' +
+        '</div>' +
+        '<button onclick="app.deleteWeekGoalItem(' + goal.id + ')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 flex items-center justify-center transition text-gray-400 hover:text-red-500 flex-shrink-0 ml-2"><i class="fas fa-trash text-xs"></i></button>';
       container.appendChild(el);
     });
+  },
+
+  async toggleWeekGoal(id) {
+    const weekId = db.getWeekId(this.currentDate);
+    const goals = await db.getWeekGoals(weekId);
+    const g = goals.find(x => x.id === id);
+    if (!g) return;
+    g.done = !g.done;
+    await db.saveWeekGoal(g);
+    this.renderWeekGoals();
+    this.renderWeekChallenges();
   },
 
   openWeekGoalModal() {
@@ -1803,7 +1828,7 @@ const app = {
     const text = document.getElementById('weekGoalText').value.trim();
     if (!text) { alert('Bitte ein Ziel eingeben'); return; }
     if (!this.selectedGoalCategory) { alert('Bitte eine Kategorie wählen'); return; }
-    const goal = { weekId: db.getWeekId(this.currentDate), text, category: this.selectedGoalCategory, created: new Date().toISOString() };
+    const goal = { weekId: db.getWeekId(this.currentDate), text, category: this.selectedGoalCategory, done: false, created: new Date().toISOString() };
     await db.saveWeekGoal(goal);
     this.closeWeekGoalModal();
     this.renderWeekGoals();
