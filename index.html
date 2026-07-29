@@ -748,7 +748,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '15';
+const APP_VERSION = '16';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -905,13 +905,7 @@ const app = {
     if (!el) return;
     const days = await db.getWeekDays(this.currentDay.weekId);
     const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
-    const totals = {};
-    days.forEach(d => (d.tasks || []).forEach(t => {
-      if (t.startTime && t.endTime) {
-        const mins = this.minutesBetween(t.startTime, t.endTime);
-        if (mins > 0) totals[t.category] = (totals[t.category] || 0) + mins;
-      }
-    }));
+    const totals = this.weekTimeByCat(days);
     const order = ['arbeit', 'acrybia', 'sport', 'chinesisch', 'custom'];
     let grand = 0, rows = '';
     order.forEach(key => {
@@ -1023,16 +1017,10 @@ const app = {
       Charts.renderMoodEnergy(labels, mood, energy);
     }
 
-    // Zeitverteilung nach Kategorie (Woche) — nach echter Zeit, nicht Anzahl
+    // Zeitverteilung nach Kategorie (Woche) — nach echter Zeit, Überlappungen bereinigt
     const catDays = await db.getWeekDays(this.currentDay.weekId);
     const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
-    const timeByCat = {};
-    catDays.forEach(d => (d.tasks || []).forEach(t => {
-      if (t.startTime && t.endTime) {
-        const mins = this.minutesBetween(t.startTime, t.endTime);
-        if (mins > 0) timeByCat[t.category] = (timeByCat[t.category] || 0) + mins;
-      }
-    }));
+    const timeByCat = this.weekTimeByCat(catDays);
     const order = ['arbeit', 'acrybia', 'sport', 'chinesisch', 'custom'];
     const keys = order.filter(k => (timeByCat[k] || 0) > 0);
     const catEmpty = document.getElementById('categoryEmpty');
@@ -1062,12 +1050,14 @@ const app = {
     const stats = await this.weekCategoryStats();
     const colors = [['from-blue-600', 'to-blue-400', 'shadow-blue-200'], ['from-purple-500', 'to-purple-400', 'shadow-purple-200'], ['from-orange-500', 'to-orange-400', 'shadow-orange-200'], ['from-emerald-500', 'to-emerald-400', 'shadow-emerald-200']];
     goals.forEach((goal, i) => {
-      const c = colors[i % colors.length];
+      const done = !!goal.done;
+      const c = done ? ['from-emerald-600', 'to-emerald-500', 'shadow-emerald-200'] : colors[i % colors.length];
       const s = stats[goal.category] || { completed: 0, total: 0 };
-      const pct = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
+      const pct = done ? 100 : (s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0);
+      const status = done ? '<i class="fas fa-check-circle mr-1"></i>Erledigt' : (s.completed + '/' + s.total + ' Aufgaben erledigt · ' + pct + '%');
       const el = document.createElement('div');
       el.className = 'challenge-card bg-gradient-to-br ' + c[0] + ' ' + c[1] + ' rounded-2xl p-5 text-white shadow-lg ' + c[2];
-      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + pct + '%"></div></div><p class="text-xs opacity-70">' + s.completed + '/' + s.total + ' Aufgaben erledigt · ' + pct + '%</p>';
+      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight ' + (done ? 'line-through opacity-90' : '') + '">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + pct + '%"></div></div><p class="text-xs opacity-70">' + status + '</p>';
       container.appendChild(el);
     });
   },
@@ -1076,9 +1066,35 @@ const app = {
     if (!a || !b) return 0;
     const [h1, m1] = a.split(':').map(Number);
     const [h2, m2] = b.split(':').map(Number);
-    let d = (h2 * 60 + m2) - (h1 * 60 + m1);
-    if (d < 0) d += 24 * 60;
-    return d;
+    const d = (h2 * 60 + m2) - (h1 * 60 + m1);
+    return d > 0 ? d : 0;
+  },
+
+  // Summiert Zeit pro Kategorie und führt Überlappungen pro Tag zusammen (keine Doppelzählung)
+  weekTimeByCat(days) {
+    const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const result = {};
+    (days || []).forEach(d => {
+      const byCat = {};
+      (d.tasks || []).forEach(t => {
+        if (t.startTime && t.endTime) {
+          const s = toMin(t.startTime), e = toMin(t.endTime);
+          if (e > s) { (byCat[t.category] = byCat[t.category] || []).push([s, e]); }
+        }
+      });
+      Object.keys(byCat).forEach(cat => {
+        const iv = byCat[cat].sort((x, y) => x[0] - y[0]);
+        let merged = 0, curS = iv[0][0], curE = iv[0][1];
+        for (let i = 1; i < iv.length; i++) {
+          const [s, e] = iv[i];
+          if (s <= curE) { curE = Math.max(curE, e); }
+          else { merged += curE - curS; curS = s; curE = e; }
+        }
+        merged += curE - curS;
+        result[cat] = (result[cat] || 0) + merged;
+      });
+    });
+    return result;
   },
 
   fmtMin(m) {
