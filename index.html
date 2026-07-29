@@ -29,6 +29,7 @@
     .nav-btn.active { color: #4F46E5; background: rgba(79, 70, 229, 0.08); }
     .cat-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.08) !important; }
     .sub-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.08) !important; color: #4F46E5 !important; }
+    .goal-cat-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.08) !important; color: #4F46E5 !important; }
     .detail-sub-btn.selected { border-color: #4F46E5 !important; background: rgba(79, 70, 229, 0.1) !important; color: #4F46E5 !important; }
     .prio-btn.selected[data-prio="1"] { border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.08) !important; color: #ef4444 !important; }
     .prio-btn.selected[data-prio="2"] { border-color: #f59e0b !important; background: rgba(245, 158, 11, 0.08) !important; color: #f59e0b !important; }
@@ -70,7 +71,7 @@
         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md">A</div>
         <div>
           <p class="text-xs text-gray-400">Guten Tag</p>
-          <h1 class="text-lg font-bold text-gray-900 leading-tight">Acrybia</h1>
+          <h1 class="text-lg font-bold text-gray-900 leading-tight">Acrybia <span id="appVersionBadge" class="text-[10px] font-medium text-gray-300 align-top"></span></h1>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -80,6 +81,9 @@
         <input type="file" id="importFile" accept="application/json" class="hidden" onchange="app.importData(event)">
         <button onclick="app.exportData()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600" title="Backup exportieren">
           <i class="fas fa-download text-sm"></i>
+        </button>
+        <button onclick="app.forceUpdate()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-600" title="App aktualisieren (Cache leeren)">
+          <i class="fas fa-rotate text-sm"></i>
         </button>
       </div>
     </div>
@@ -126,11 +130,17 @@
     <div id="tab-stats" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Statistik</h2>
 
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Zeit nach Kategorie (Woche)</h3>
+      <div id="statTime" class="mb-5"></div>
+
       <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Sport diese Woche</h3>
       <div id="statSport" class="mb-5"></div>
 
       <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Anfahrt diese Woche</h3>
       <div id="weekStats" class="mb-5"></div>
+
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Schlaf diese Woche</h3>
+      <div id="statSleep" class="mb-5"></div>
 
       <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Gewichtsverlauf</h3>
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
@@ -208,13 +218,27 @@
         </div>
         <div id="intakeList" class="space-y-2"></div>
       </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+        <h3 class="font-bold text-gray-900 mb-1"><i class="fas fa-moon text-indigo-400 mr-1"></i> Schlaf</h3>
+        <p class="text-xs text-gray-400 mb-3">Wie lange und wie hast du geschlafen?</p>
+        <div class="mb-3">
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Schlafdauer (Stunden)</label>
+          <input type="number" id="sleepHoursInput" step="0.5" min="0" max="24" placeholder="z.B. 7.5" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition">
+        </div>
+        <div class="mb-3">
+          <label class="text-xs text-gray-400 mb-1 block font-medium">Wie hast du dich gefühlt?</label>
+          <textarea id="sleepFeelingInput" rows="2" placeholder="z.B. erholt, unruhig, oft wach..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition resize-none"></textarea>
+        </div>
+        <button onclick="app.saveSleep()" class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition shadow-lg shadow-indigo-200">Schlaf speichern</button>
+      </div>
     </div>
 
     <!-- TAB: WEEK GOALS -->
     <div id="tab-week" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Wochenziele</h2>
       <div id="weekGoals" class="space-y-3"></div>
-      <button onclick="app.addWeekGoal()" class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:text-blue-600 hover:border-blue-400 transition text-sm font-semibold flex items-center justify-center gap-2">
+      <button onclick="app.openWeekGoalModal()" class="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:text-blue-600 hover:border-blue-400 transition text-sm font-semibold flex items-center justify-center gap-2">
         <i class="fas fa-plus"></i> Wochenziel hinzufügen
       </button>
     </div>
@@ -402,6 +426,29 @@
     </div>
   </div>
 
+  <!-- Week Goal Modal -->
+  <div id="weekGoalModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="app.closeWeekGoalModal()"></div>
+    <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl border-t border-gray-100 max-h-[92vh] overflow-y-auto">
+      <div class="p-6 max-w-lg mx-auto">
+        <button onclick="app.closeWeekGoalModal()" class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 block" aria-label="Schließen"></button>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">Neues Wochenziel</h2>
+          <button onclick="app.closeWeekGoalModal()" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition" aria-label="Schließen"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ziel</label>
+          <input type="text" id="weekGoalText" placeholder="z.B. 3x Sport, HSK 2 fertig..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <div class="mb-6">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategorie</label>
+          <div class="grid grid-cols-2 gap-2.5" id="weekGoalCatGrid"></div>
+        </div>
+        <button onclick="app.saveWeekGoalFromModal()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white active:scale-95 transition font-bold shadow-lg shadow-blue-200">Ziel speichern</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 
 // ============ DB LAYER ============
@@ -456,6 +503,7 @@ class AcrybiaDB {
     if (day.body.waist === undefined) day.body.waist = null;
     if (!day.body.meals) day.body.meals = {};
     if (!Array.isArray(day.body.intake)) day.body.intake = [];
+    if (!day.body.sleep) day.body.sleep = { hours: null, feeling: '' };
     if (!day.reflection) day.reflection = {};
     if (!day.reflection.shame) day.reflection.shame = { experienced: false, when: '', why: '' };
     if (!day.reflection.fear) day.reflection.fear = { experienced: false, why: '' };
@@ -468,7 +516,7 @@ class AcrybiaDB {
     return {
       date, weekId: this.getWeekId(date), tasks: [],
       reflection: { biggestProblem: { category: 'arbeit', text: '' }, blocker: '', blockerWhy: '', tags: [], mood: 3, energy: 3, shame: { experienced: false, when: '', why: '' }, fear: { experienced: false, why: '' } },
-      body: { weight: null, waist: null, meals: {}, protein: null, intake: [] },
+      body: { weight: null, waist: null, meals: {}, protein: null, intake: [], sleep: { hours: null, feeling: '' } },
       completed: false, completedWithOpenTasks: false
     };
   }
@@ -700,6 +748,8 @@ const Charts = {
 };
 
 // ============ APP ============
+const APP_VERSION = '13';
+
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
   appToday: new Date().toISOString().split('T')[0],
@@ -710,6 +760,7 @@ const app = {
   selectedTags: [],
   completingTaskId: null,
   editingTaskId: null,
+  selectedGoalCategory: null,
   weightSettings: { startWeight: null, targetWeight: 89, startWaist: null, targetWaist: null },
 
   categories: {
@@ -746,6 +797,8 @@ const app = {
 
   async init() {
     try {
+      const vb = document.getElementById('appVersionBadge');
+      if (vb) vb.textContent = 'v' + APP_VERSION;
       if (navigator.storage && navigator.storage.persist) {
         try { await navigator.storage.persist(); } catch (e) {}
       }
@@ -783,6 +836,23 @@ const app = {
 
   async loadDay() {
     this.currentDay = await db.getDay(this.currentDate);
+  },
+
+  async forceUpdate() {
+    if (!confirm('App auf die neueste Version aktualisieren? Deine Daten bleiben erhalten.')) return;
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch (e) {
+      console.log('forceUpdate:', e);
+    }
+    location.reload();
   },
 
   checkDateRollover() {
@@ -830,6 +900,61 @@ const app = {
     return stats;
   },
 
+  async renderTimeStats() {
+    const el = document.getElementById('statTime');
+    if (!el) return;
+    const days = await db.getWeekDays(this.currentDay.weekId);
+    const colorMap = { arbeit: '#3b82f6', acrybia: '#a855f7', sport: '#f97316', chinesisch: '#ef4444', custom: '#10b981' };
+    const totals = {};
+    days.forEach(d => (d.tasks || []).forEach(t => {
+      if (t.startTime && t.endTime) {
+        const mins = this.minutesBetween(t.startTime, t.endTime);
+        if (mins > 0) totals[t.category] = (totals[t.category] || 0) + mins;
+      }
+    }));
+    const order = ['arbeit', 'acrybia', 'sport', 'chinesisch', 'custom'];
+    let grand = 0, rows = '';
+    order.forEach(key => {
+      const mins = totals[key] || 0;
+      if (mins <= 0) return;
+      grand += mins;
+      rows += '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><span class="text-sm text-gray-700"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style="background:' + (colorMap[key] || '#94a3b8') + '"></span>' + (this.categories[key]?.label || key) + '</span><span class="text-sm font-bold text-gray-900">' + this.fmtMin(mins) + '</span></div>';
+    });
+    if (!rows) {
+      el.innerHTML = '<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-xs text-gray-300">Diese Woche noch keine Aufgaben mit Start- und Ende-Zeit. Trage bei Aufgaben eine Start- und Ende-Zeit ein, damit die Stunden gezählt werden.</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div class="bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl p-5 text-white shadow-lg mb-3">' +
+        '<p class="text-xs opacity-80 mb-1">Erfasste Zeit gesamt</p>' +
+        '<p class="text-3xl font-bold">' + this.fmtMin(grand) + '</p>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">' + rows + '</div>';
+  },
+
+  async renderSleepStats() {
+    const el = document.getElementById('statSleep');
+    if (!el) return;
+    const days = await db.getWeekDays(this.currentDay.weekId);
+    const vals = days.map(d => d.body?.sleep?.hours).filter(h => typeof h === 'number' && h > 0);
+    if (vals.length === 0) {
+      el.innerHTML = '<div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-xs text-gray-300">Diese Woche noch kein Schlaf eingetragen.</div>';
+      return;
+    }
+    const total = vals.reduce((a, b) => a + b, 0);
+    const avg = total / vals.length;
+    el.innerHTML =
+      '<div class="grid grid-cols-2 gap-3">' +
+        '<div class="bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-2xl p-4 text-white shadow-lg">' +
+          '<div class="flex items-center justify-between mb-2"><i class="fas fa-moon"></i><span class="text-xs opacity-80">' + vals.length + ' Nächte</span></div>' +
+          '<p class="text-2xl font-bold">' + avg.toFixed(1) + ' h</p><p class="text-xs opacity-80 mt-1">Ø pro Nacht</p>' +
+        '</div>' +
+        '<div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-center">' +
+          '<p class="text-2xl font-bold text-gray-900">' + total.toFixed(1) + ' h</p><p class="text-xs text-gray-400 mt-1">gesamt diese Woche</p>' +
+        '</div>' +
+      '</div>';
+  },
+
   async renderSportStats() {
     const el = document.getElementById('statSport');
     if (!el) return;
@@ -865,8 +990,10 @@ const app = {
   },
 
   async renderStats() {
+    await this.renderTimeStats();
     await this.renderSportStats();
     await this.renderWeekStats();
+    await this.renderSleepStats();
 
     const allDays = (await db.getAllDays()).sort((a, b) => a.date.localeCompare(b.date));
 
@@ -1531,8 +1658,21 @@ const app = {
     document.getElementById('mealDinner').value = body.meals?.dinner || '';
     document.getElementById('mealSnack').value = body.meals?.snack || '';
     document.getElementById('proteinInput').value = body.protein || '';
+    const sleep = body.sleep || {};
+    document.getElementById('sleepHoursInput').value = (sleep.hours ?? '') === null ? '' : (sleep.hours ?? '');
+    document.getElementById('sleepFeelingInput').value = sleep.feeling || '';
     this.renderIntake();
     this.renderTrends();
+  },
+
+  async saveSleep() {
+    const hoursRaw = document.getElementById('sleepHoursInput').value;
+    const feeling = document.getElementById('sleepFeelingInput').value.trim();
+    if (!this.currentDay.body.sleep) this.currentDay.body.sleep = { hours: null, feeling: '' };
+    this.currentDay.body.sleep.hours = hoursRaw === '' ? null : parseFloat(hoursRaw);
+    this.currentDay.body.sleep.feeling = feeling;
+    await db.saveDay(this.currentDay);
+    alert('Schlaf gespeichert!');
   },
 
   async renderTrends() {
@@ -1633,13 +1773,39 @@ const app = {
     });
   },
 
-  async addWeekGoal() {
-    const text = prompt('Wochenziel:');
-    if (!text) return;
-    const category = prompt('Kategorie (arbeit/acrybia/sport/chinesisch/custom):', 'arbeit');
-    if (!category) return;
-    const goal = { weekId: db.getWeekId(this.currentDate), text, category, created: new Date().toISOString() };
+  openWeekGoalModal() {
+    this.selectedGoalCategory = null;
+    document.getElementById('weekGoalText').value = '';
+    const grid = document.getElementById('weekGoalCatGrid');
+    grid.innerHTML = '';
+    Object.entries(this.categories).forEach(([key, cat]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'goal-cat-btn p-3 rounded-xl bg-gray-50 border-2 border-gray-100 hover:border-blue-400 transition text-sm font-medium text-gray-700 flex items-center gap-2';
+      btn.dataset.cat = key;
+      btn.innerHTML = '<span class="w-2.5 h-2.5 rounded-full dot-' + key + '"></span>' + cat.label;
+      btn.onclick = () => this.selectGoalCategory(key);
+      grid.appendChild(btn);
+    });
+    document.getElementById('weekGoalModal').classList.remove('hidden');
+  },
+
+  selectGoalCategory(cat) {
+    this.selectedGoalCategory = cat;
+    document.querySelectorAll('.goal-cat-btn').forEach(b => b.classList.toggle('selected', b.dataset.cat === cat));
+  },
+
+  closeWeekGoalModal() {
+    document.getElementById('weekGoalModal').classList.add('hidden');
+  },
+
+  async saveWeekGoalFromModal() {
+    const text = document.getElementById('weekGoalText').value.trim();
+    if (!text) { alert('Bitte ein Ziel eingeben'); return; }
+    if (!this.selectedGoalCategory) { alert('Bitte eine Kategorie wählen'); return; }
+    const goal = { weekId: db.getWeekId(this.currentDate), text, category: this.selectedGoalCategory, created: new Date().toISOString() };
     await db.saveWeekGoal(goal);
+    this.closeWeekGoalModal();
     this.renderWeekGoals();
     this.renderWeekChallenges();
   },
