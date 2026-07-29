@@ -748,7 +748,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '17';
+const APP_VERSION = '18';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -1170,7 +1170,7 @@ const app = {
       const badgeText = task.priority === 1 ? 'High' : (task.priority === 2 ? 'Medium' : 'Low');
       el.style.cursor = 'pointer';
       el.onclick = () => this.editTask(task.id);
-      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + commuteStr + startDateStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<i class="fas fa-check-circle text-emerald-500 text-lg"></i>') + '</div></div></div></div>';
+      el.innerHTML = '<div class="flex items-start gap-3"><div class="w-2.5 h-2.5 rounded-full mt-2 dot-' + task.category + ' flex-shrink-0"></div><div class="flex-1 min-w-0"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="task-title font-semibold text-sm text-gray-900">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + (timeStr ? ' · ' + timeStr : '') + '</p>' + detailStr + commuteStr + startDateStr + achievementStr + '</div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-xs"></i></button>' : '<button onclick="event.stopPropagation(); app.uncompleteTask(\'' + task.id + '\')" class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-500 transition" title="Erledigt rückgängig machen"><i class="fas fa-check-circle text-lg"></i></button>') + '</div></div></div></div>';
       list.appendChild(el);
     });
   },
@@ -1231,7 +1231,7 @@ const app = {
       const commuteTl = this.commuteHtml(task);
       el.style.cursor = 'pointer';
       el.onclick = () => this.editTask(task.id);
-      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + detailTl + commuteTl + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<i class="fas fa-check-circle text-emerald-500"></i>') + '</div></div></div>';
+      el.innerHTML = '<div class="text-xs font-bold text-gray-400 w-12 text-right absolute left-0 top-6">' + timeLabel + '</div><div class="timeline-dot dot-' + task.category + '"></div><div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm ' + (task.completed ? 'opacity-50' : '') + '"><div class="flex items-start justify-between gap-2"><div><p class="font-semibold text-sm text-gray-900 ' + (task.completed ? 'line-through text-gray-400' : '') + '">' + (sub?.label || task.subcategory) + '</p><p class="text-xs text-gray-400 mt-0.5">' + (cat?.label || task.category) + '</p>' + detailTl + commuteTl + '</div><div class="flex flex-col items-end gap-1.5"><span class="text-[10px] font-bold px-2 py-1 rounded-full ' + badgeClass + '">' + badgeText + '</span>' + (!task.completed ? '<button onclick="event.stopPropagation(); app.openCompleteModal(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-gray-50 hover:bg-emerald-50 border border-gray-200 flex items-center justify-center transition text-gray-400 hover:text-emerald-500"><i class="fas fa-check text-[10px]"></i></button>' : '<button onclick="event.stopPropagation(); app.uncompleteTask(\'' + task.id + '\')" class="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-500 transition" title="Erledigt rückgängig machen"><i class="fas fa-check-circle"></i></button>') + '</div></div></div>';
       container.appendChild(el);
     });
   },
@@ -1509,6 +1509,19 @@ const app = {
       this.updateCharts();
       this.updateDayCompleteButton();
     }
+  },
+
+  async uncompleteTask(taskId) {
+    const task = this.currentDay.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    task.completed = false;
+    task.achievement = '';
+    await db.saveDay(this.currentDay);
+    this.renderTasks();
+    this.renderTimeline();
+    this.updateCharts();
+    this.updateDayCompleteButton();
+    this.renderWeekChallenges();
   },
 
   updateDayCompleteButton() {
