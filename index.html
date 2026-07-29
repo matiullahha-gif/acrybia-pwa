@@ -748,7 +748,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '16';
+const APP_VERSION = '17';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -1038,7 +1038,8 @@ const app = {
 
   async renderWeekChallenges() {
     const weekId = db.getWeekId(this.currentDate);
-    const goals = await db.getWeekGoals(weekId);
+    const allGoals = await db.getWeekGoals(weekId);
+    const goals = allGoals.filter(g => !g.done);
     const container = document.getElementById('weekChallenges');
     container.innerHTML = '';
 
