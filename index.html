@@ -148,6 +148,13 @@
         <div style="height:200px"><canvas id="weightHistoryChart"></canvas></div>
       </div>
 
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Bauchumfang-Verlauf</h3>
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
+        <div id="waistHistorySummary" class="text-xs text-gray-500 mb-2"></div>
+        <div id="waistHistoryEmpty" class="text-xs text-gray-300 hidden">Noch nicht genug Taillen-Einträge für einen Verlauf.</div>
+        <div style="height:200px"><canvas id="waistHistoryChart"></canvas></div>
+      </div>
+
       <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Stimmung &amp; Energie</h3>
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
         <div id="moodEnergyEmpty" class="text-xs text-gray-300 hidden">Noch nicht genug abgeschlossene Tage für einen Verlauf.</div>
@@ -688,10 +695,30 @@ const Charts = {
   moodEnergyChart: null,
   categoryChart: null,
   weightHistoryChart: null,
+  waistHistoryChart: null,
 
   clearMoodEnergy() { if (this.moodEnergyChart) { this.moodEnergyChart.destroy(); this.moodEnergyChart = null; } },
   clearCategory() { if (this.categoryChart) { this.categoryChart.destroy(); this.categoryChart = null; } },
   clearWeightHistory() { if (this.weightHistoryChart) { this.weightHistoryChart.destroy(); this.weightHistoryChart = null; } },
+  clearWaistHistory() { if (this.waistHistoryChart) { this.waistHistoryChart.destroy(); this.waistHistoryChart = null; } },
+
+  renderWaistHistory(labels, waists, target) {
+    const ctx = document.getElementById('waistHistoryChart');
+    if (!ctx) return;
+    this.clearWaistHistory();
+    const datasets = [{ label: 'Bauchumfang', data: waists, borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.12)', fill: true, tension: 0.3, spanGaps: true, pointRadius: 2 }];
+    if (typeof target === 'number') {
+      datasets.push({ label: 'Ziel', data: labels.map(() => target), borderColor: '#10b981', borderDash: [6, 4], pointRadius: 0, fill: false });
+    }
+    this.waistHistoryChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+  },
 
   renderWeightHistory(labels, weights, target) {
     const ctx = document.getElementById('weightHistoryChart');
@@ -748,7 +775,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '18';
+const APP_VERSION = '19';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -1000,6 +1027,24 @@ const app = {
     } else {
       if (whEmpty) whEmpty.classList.add('hidden');
       Charts.renderWeightHistory(wDays.map(d => d.date.slice(5)), wDays.map(d => d.body.weight), this.weightSettings.targetWeight);
+    }
+
+    // Bauchumfang-Verlauf (alle Einträge mit Taille, letzte 30)
+    const waAll = allDays.filter(d => typeof d.body?.waist === 'number');
+    const waDays = waAll.slice(-30);
+    const waEmpty = document.getElementById('waistHistoryEmpty');
+    const waSummary = document.getElementById('waistHistorySummary');
+    if (waDays.length < 2) {
+      if (waEmpty) waEmpty.classList.remove('hidden');
+      if (waSummary) waSummary.textContent = waAll.length === 1 ? ('Erste Messung: ' + waAll[0].body.waist + ' cm am ' + waAll[0].date.split('-').reverse().join('.')) : '';
+      Charts.clearWaistHistory();
+    } else {
+      if (waEmpty) waEmpty.classList.add('hidden');
+      const first = waAll[0], last = waAll[waAll.length - 1];
+      const diff = last.body.waist - first.body.waist;
+      const arrow = diff < 0 ? '▼' : (diff > 0 ? '▲' : '→');
+      if (waSummary) waSummary.textContent = 'Erste Messung ' + first.body.waist + ' cm (' + first.date.split('-').reverse().join('.') + ') · heute ' + last.body.waist + ' cm · ' + arrow + ' ' + Math.abs(diff).toFixed(1) + ' cm';
+      Charts.renderWaistHistory(waDays.map(d => d.date.slice(5)), waDays.map(d => d.body.waist), this.weightSettings.targetWaist);
     }
 
     // Stimmung & Energie Verlauf (letzte 14 abgeschlossene Tage)
