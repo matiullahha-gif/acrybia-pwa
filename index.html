@@ -775,7 +775,7 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '19';
+const APP_VERSION = '20';
 
 const app = {
   currentDate: new Date().toISOString().split('T')[0],
@@ -1085,10 +1085,12 @@ const app = {
     const weekId = db.getWeekId(this.currentDate);
     const allGoals = await db.getWeekGoals(weekId);
     const goals = allGoals.filter(g => !g.done);
+    const doneCount = allGoals.length - goals.length;
     const container = document.getElementById('weekChallenges');
     container.innerHTML = '';
 
-    if (goals.length === 0) {
+    // Wirklich noch nie ein Ziel angelegt → Aufforderung
+    if (allGoals.length === 0) {
       container.innerHTML = '<div class="challenge-card bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl p-5 text-white shadow-lg"><p class="text-xs font-medium opacity-80 mb-1">Noch keine Ziele</p><h3 class="text-lg font-bold mb-3">Erstelle dein erstes Wochenziel</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:0%"></div></div><p class="text-xs opacity-70">0%</p></div><div class="challenge-card bg-gradient-to-br from-purple-500 to-purple-400 rounded-2xl p-5 text-white shadow-lg"><p class="text-xs font-medium opacity-80 mb-1">Tipp</p><h3 class="text-lg font-bold mb-3">Bleib konsistent</h3><p class="text-sm opacity-80">Trage täglich deine Tasks ein, um Fortschritte zu sehen.</p></div>';
       return;
     }
@@ -1096,16 +1098,23 @@ const app = {
     const stats = await this.weekCategoryStats();
     const colors = [['from-blue-600', 'to-blue-400', 'shadow-blue-200'], ['from-purple-500', 'to-purple-400', 'shadow-purple-200'], ['from-orange-500', 'to-orange-400', 'shadow-orange-200'], ['from-emerald-500', 'to-emerald-400', 'shadow-emerald-200']];
     goals.forEach((goal, i) => {
-      const done = !!goal.done;
-      const c = done ? ['from-emerald-600', 'to-emerald-500', 'shadow-emerald-200'] : colors[i % colors.length];
+      const c = colors[i % colors.length];
       const s = stats[goal.category] || { completed: 0, total: 0 };
-      const pct = done ? 100 : (s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0);
-      const status = done ? '<i class="fas fa-check-circle mr-1"></i>Erledigt' : (s.completed + '/' + s.total + ' Aufgaben erledigt · ' + pct + '%');
+      const pct = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
       const el = document.createElement('div');
       el.className = 'challenge-card bg-gradient-to-br ' + c[0] + ' ' + c[1] + ' rounded-2xl p-5 text-white shadow-lg ' + c[2];
-      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight ' + (done ? 'line-through opacity-90' : '') + '">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + pct + '%"></div></div><p class="text-xs opacity-70">' + status + '</p>';
+      el.innerHTML = '<p class="text-xs font-medium opacity-80 mb-1">' + (this.categories[goal.category]?.label || goal.category) + '</p><h3 class="text-lg font-bold mb-3 leading-tight">' + goal.text + '</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:' + pct + '%"></div></div><p class="text-xs opacity-70">' + s.completed + '/' + s.total + ' Aufgaben erledigt · ' + pct + '%</p>';
       container.appendChild(el);
     });
+
+    // Erreichte Ziele dokumentieren (statt "keine Ziele" zu zeigen)
+    if (doneCount > 0) {
+      const card = document.createElement('div');
+      card.className = 'challenge-card bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 text-white shadow-lg';
+      const restText = goals.length > 0 ? ('Noch ' + goals.length + ' offen — weiter so!') : 'Alle Wochenziele diese Woche erreicht.';
+      card.innerHTML = '<div class="flex items-center justify-between mb-1"><p class="text-xs font-medium opacity-80">Erreicht</p><i class="fas fa-trophy"></i></div><h3 class="text-lg font-bold mb-2 leading-tight">' + doneCount + ' Wochenziel' + (doneCount > 1 ? 'e' : '') + ' geschafft</h3><div class="w-full bg-white/20 rounded-full h-2 mb-2"><div class="bg-white rounded-full h-2" style="width:100%"></div></div><p class="text-xs opacity-80">' + restText + '</p>';
+      container.appendChild(card);
+    }
   },
 
   minutesBetween(a, b) {
