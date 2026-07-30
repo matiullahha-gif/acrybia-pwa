@@ -320,6 +320,11 @@
           <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Start</label><input type="time" id="taskStart" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
           <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Ende</label><input type="time" id="taskEnd" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition"></div>
         </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Tag</label>
+          <input type="date" id="taskDay" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500 transition">
+          <p class="text-[11px] text-gray-400 mt-1">Ändere das Datum, um die Aufgabe auf einen anderen Tag zu verschieben.</p>
+        </div>
         <div class="mb-6">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Priorität</label>
           <div class="flex gap-2">
@@ -459,6 +464,15 @@
   <script>
 
 // ============ DB LAYER ============
+// Lokales Datum als YYYY-MM-DD (nicht UTC!) — verhindert Tagesverschiebung nach Mitternacht
+function localDateStr(d) {
+  d = d || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
 const DB_NAME = 'AcrybiaDB';
 const DB_VERSION = 2;
 
@@ -494,7 +508,8 @@ class AcrybiaDB {
   }
 
   getWeekId(dateStr) {
-    const d = new Date(dateStr);
+    const [Y, M, D] = dateStr.split('-').map(Number);
+    const d = new Date(Y, M - 1, D);
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
     const w1 = new Date(d.getFullYear(), 0, 4);
@@ -775,11 +790,11 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '20';
+const APP_VERSION = '22';
 
 const app = {
-  currentDate: new Date().toISOString().split('T')[0],
-  appToday: new Date().toISOString().split('T')[0],
+  currentDate: localDateStr(),
+  appToday: localDateStr(),
   currentDay: null,
   selectedCategory: null,
   selectedSubcategory: null,
@@ -883,7 +898,7 @@ const app = {
   },
 
   checkDateRollover() {
-    const realToday = new Date().toISOString().split('T')[0];
+    const realToday = localDateStr();
     if (realToday === this.appToday) return;
     const wasOnToday = this.currentDate === this.appToday;
     this.appToday = realToday;
@@ -1234,11 +1249,12 @@ const app = {
     if (!strip) return;
     strip.innerHTML = '';
     const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    const today = new Date();
+    const base = new Date();
+    const dow = (base.getDay() + 6) % 7; // 0 = Montag ... 6 = Sonntag
+    const monday = new Date(base.getFullYear(), base.getMonth(), base.getDate() - dow);
     for (let i = 0; i < 7; i++) {
-      const d = new Date();
-      d.setDate(today.getDate() - today.getDay() + 1 + i);
-      const ds = d.toISOString().split('T')[0];
+      const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      const ds = localDateStr(d);
       const isToday = ds === this.currentDate;
       const dayNum = d.getDate();
       const btn = document.createElement('button');
@@ -1303,6 +1319,7 @@ const app = {
     document.getElementById('detailSection').classList.add('hidden');
     document.getElementById('taskStart').value = '';
     document.getElementById('taskEnd').value = '';
+    document.getElementById('taskDay').value = this.currentDate;
 
     const titleEl = document.getElementById('taskModalTitle');
     const saveBtn = document.getElementById('taskSaveBtn');
@@ -1500,6 +1517,8 @@ const app = {
       startDate = document.getElementById('detailStartDate')?.value || '';
     }
 
+    const targetDay = document.getElementById('taskDay').value || this.currentDate;
+
     if (this.editingTaskId) {
       const t = this.currentDay.tasks.find(x => x.id === this.editingTaskId);
       if (t) {
@@ -1512,10 +1531,20 @@ const app = {
         t.commuteStart = commuteStart;
         t.commuteEnd = commuteEnd;
         t.startDate = startDate;
+        if (targetDay !== this.currentDate) {
+          // Aufgabe auf einen anderen Tag verschieben
+          this.currentDay.tasks = this.currentDay.tasks.filter(x => x.id !== this.editingTaskId);
+          await db.saveDay(this.currentDay);
+          const dest = await db.getDay(targetDay);
+          dest.tasks.push(t);
+          await db.saveDay(dest);
+        } else {
+          await db.saveDay(this.currentDay);
+        }
       }
       this.editingTaskId = null;
     } else {
-      this.currentDay.tasks.push({
+      const newTask = {
         id: db.uuid(),
         category: this.selectedCategory,
         subcategory: this.selectedSubcategory,
@@ -1528,10 +1557,17 @@ const app = {
         startDate: startDate,
         completed: false,
         achievement: ''
-      });
+      };
+      if (targetDay === this.currentDate) {
+        this.currentDay.tasks.push(newTask);
+        await db.saveDay(this.currentDay);
+      } else {
+        const dest = await db.getDay(targetDay);
+        dest.tasks.push(newTask);
+        await db.saveDay(dest);
+      }
     }
 
-    await db.saveDay(this.currentDay);
     this.closeTaskModal();
     this.renderTasks();
     this.renderTimeline();
