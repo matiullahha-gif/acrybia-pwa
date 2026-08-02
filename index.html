@@ -121,6 +121,11 @@
     <div id="tab-dashboard" class="tab-content hidden">
       <h2 class="text-2xl font-bold text-gray-900 mb-4">Zeitplan</h2>
       <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <button onclick="app.shiftWeek(-1)" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition" aria-label="Woche zurück"><i class="fas fa-chevron-left text-xs"></i></button>
+          <button onclick="app.goToTodayWeek()" id="weekStripLabel" class="text-xs font-bold text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-100 transition">Diese Woche</button>
+          <button onclick="app.shiftWeek(1)" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition" aria-label="Woche vor"><i class="fas fa-chevron-right text-xs"></i></button>
+        </div>
         <div id="weekDayStrip" class="flex justify-between items-center"></div>
       </div>
       <div id="timelineView" class="space-y-0"></div>
@@ -792,11 +797,12 @@ const Charts = {
 };
 
 // ============ APP ============
-const APP_VERSION = '23';
+const APP_VERSION = '24';
 
 const app = {
   currentDate: localDateStr(),
   appToday: localDateStr(),
+  stripAnchor: localDateStr(),
   currentDay: null,
   selectedCategory: null,
   selectedSubcategory: null,
@@ -906,6 +912,7 @@ const app = {
     this.appToday = realToday;
     if (wasOnToday) {
       this.currentDate = realToday;
+      this.stripAnchor = realToday;
       this.loadDay().then(() => {
         this.renderTasks();
         this.renderBody();
@@ -1251,25 +1258,49 @@ const app = {
     if (!strip) return;
     strip.innerHTML = '';
     const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    const base = new Date();
-    const dow = (base.getDay() + 6) % 7; // 0 = Montag ... 6 = Sonntag
-    const monday = new Date(base.getFullYear(), base.getMonth(), base.getDate() - dow);
+    const [Y, M, D] = this.stripAnchor.split('-').map(Number);
+    const anchor = new Date(Y, M - 1, D);
+    const dow = (anchor.getDay() + 6) % 7; // 0 = Montag ... 6 = Sonntag
+    const monday = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() - dow);
+    const todayStr = localDateStr();
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
       const ds = localDateStr(d);
-      const isToday = ds === this.currentDate;
-      const dayNum = d.getDate();
+      const isSelected = ds === this.currentDate;
+      const isToday = ds === todayStr;
       const btn = document.createElement('button');
-      btn.className = 'day-strip-item w-11 h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition ' + (isToday ? 'active' : '');
-      btn.innerHTML = '<span class="text-[10px] font-medium opacity-70">' + dayNames[i] + '</span><span class="text-sm font-bold">' + dayNum + '</span>';
+      btn.className = 'day-strip-item w-11 h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition ' + (isSelected ? 'active' : (isToday ? 'ring-2 ring-blue-300' : ''));
+      btn.innerHTML = '<span class="text-[10px] font-medium opacity-70">' + dayNames[i] + '</span><span class="text-sm font-bold">' + d.getDate() + '</span>';
       btn.onclick = () => {
         this.currentDate = ds;
-        this.loadDay().then(() => { this.renderTimeline(); this.renderTasks(); });
-        document.querySelectorAll('.day-strip-item').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        this.loadDay().then(() => { this.renderTimeline(); this.renderTasks(); this.updateCharts(); this.updateDayCompleteButton(); });
+        this.renderWeekDayStrip();
       };
       strip.appendChild(btn);
     }
+    const label = document.getElementById('weekStripLabel');
+    if (label) {
+      const sun = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+      const fmt = (dt) => String(dt.getDate()).padStart(2, '0') + '.' + String(dt.getMonth() + 1).padStart(2, '0');
+      const kw = db.getWeekId(localDateStr(monday)).split('-W')[1];
+      const isThisWeek = db.getWeekId(todayStr) === db.getWeekId(localDateStr(monday));
+      label.textContent = (isThisWeek ? 'Diese Woche' : 'KW ' + kw) + ' · ' + fmt(monday) + '–' + fmt(sun);
+    }
+  },
+
+  shiftWeek(delta) {
+    const [Y, M, D] = this.stripAnchor.split('-').map(Number);
+    const d = new Date(Y, M - 1, D);
+    d.setDate(d.getDate() + delta * 7);
+    this.stripAnchor = localDateStr(d);
+    this.renderWeekDayStrip();
+  },
+
+  goToTodayWeek() {
+    this.stripAnchor = localDateStr();
+    this.currentDate = localDateStr();
+    this.loadDay().then(() => { this.renderTimeline(); this.renderTasks(); this.updateCharts(); this.updateDayCompleteButton(); });
+    this.renderWeekDayStrip();
   },
 
   async renderTimeline() {
