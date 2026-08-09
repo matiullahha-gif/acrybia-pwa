@@ -1,4 +1,4 @@
-const CACHE_NAME = 'acrybia-v26';
+const CACHE_NAME = 'acrybia-v27';
 const STATIC_ASSETS = [
   './',
   './index.html',
